@@ -74,10 +74,10 @@ for var in ['BUSLOANS', 'CPIAUCSL', 'FGEXPND', 'GDPC1']:
     french_fama[var] = (french_fama[var] / french_fama[var].shift(12) - 1) * 100
 
 # Shift outcome variable to prevent predicting on concurrent information
-french_fama['HML_1'] = french_fama['HML'].shift(1)
+french_fama['HML_1'] = french_fama['HML'].shift(-1)
 
 # Create  rolling averages as extra features
-for var in [var for var in french_fama.columns if var not in ['HML']]:
+for var in [var for var in french_fama.columns if var not in ['HML_1']]:
     for timespan in [4, 12, 36]:
         french_fama[f'{var}_ROLLING_{timespan}'] = french_fama[var].rolling(timespan).mean()
 
