@@ -12,7 +12,7 @@ from datetime import datetime
 warnings.simplefilter('ignore', category=FutureWarning)
 
 # Define a log file
-log_file_name = 'HML_output_log.txt'
+log_file_name = 'SMB_output_log.txt'
 
 # Open the log file in write mode
 log_file = open(log_file_name, "w")
@@ -74,10 +74,10 @@ for var in ['BUSLOANS', 'CPIAUCSL', 'FGEXPND', 'GDPC1']:
     french_fama[var] = (french_fama[var] / french_fama[var].shift(12) - 1) * 100
 
 # Shift outcome variable to prevent predicting on concurrent information
-french_fama['HML_1'] = french_fama['HML'].shift(-1)
+french_fama['SMB_1'] = french_fama['SMB'].shift(-1)
 
 # Create  rolling averages as extra features
-for var in [var for var in french_fama.columns if var not in ['HML_1']]:
+for var in [var for var in french_fama.columns if var not in ['SMB_1']]:
     for timespan in [4, 12, 36]:
         french_fama[f'{var}_ROLLING_{timespan}'] = french_fama[var].rolling(timespan).mean()
 
@@ -86,7 +86,7 @@ for i in range(5):
     french_fama[f'DUMMY_{i}'] = np.random.random(size=len(french_fama))
 
 # Create indicator outcome for classification
-french_fama['HML_1_INDICATOR'] = np.where(french_fama['HML_1'] >= 0, 1, 0)
+french_fama['SMB_1_INDICATOR'] = np.where(french_fama['SMB_1'] >= 0, 1, 0)
 
 # Create a feature for month
 french_fama['MONTH'] = french_fama.index.month
@@ -128,8 +128,8 @@ for i, timesplit in enumerate(date_list):
     # Split into X and Y
     X_train = train[dummy_vars]
     X_test = test[dummy_vars]
-    y_train = train['HML_1']
-    y_test = test['HML_1']
+    y_train = train['SMB_1']
+    y_test = test['SMB_1']
 
     # Train the model
     rf_dummy.fit(X_train, y_train)
@@ -176,8 +176,8 @@ for i, timesplit in enumerate(date_list):
     # Split into X and Y
     X_train = train[dummy_vars]
     X_test = test[dummy_vars]
-    y_train = train['HML_1_INDICATOR']
-    y_test = test['HML_1_INDICATOR']
+    y_train = train['SMB_1_INDICATOR']
+    y_test = test['SMB_1_INDICATOR']
 
     # Train the model
     rf_dummy.fit(X_train, y_train)
@@ -191,7 +191,10 @@ for i, timesplit in enumerate(date_list):
     # Evaluate dummy predictions
     acc = accuracy_score(y_test, y_pred)
     bal_acc = balanced_accuracy_score(y_test, y_pred)
-    roc = roc_auc_score(y_test, y_pred)
+    try:
+        roc = roc_auc_score(y_test, y_pred)
+    except:
+        roc = 1
     prec = precision_score(y_test, y_pred)
 
     # Save results
@@ -199,7 +202,7 @@ for i, timesplit in enumerate(date_list):
         res_dict[f'DUMMY_{i}_{str(metric).upper()}'] = metric
 
     # Add population proportion
-    res_dict[f'DUMMY_{i}_PROP_'] = (test['HML_1_INDICATOR'] == 1).sum() / len(test)
+    res_dict[f'DUMMY_{i}_PROP_'] = (test['SMB_1_INDICATOR'] == 1).sum() / len(test)
 
     # Print results
     print(timesplit, '-', str(pd.to_datetime(timesplit) + pd.Timedelta(days=364)))
@@ -214,7 +217,7 @@ res_dict = {}
 
 # Define dummy variables
 pred_vars = [var for var in french_fama.columns if var not in
-             ['DUMMY_' + str(i) for i in range(5)] + ['HML', 'HML_1', 'HML_1_INDICATOR', 'DUM_PRED_REG',
+             ['DUMMY_' + str(i) for i in range(5)] + ['SMB', 'SMB_1', 'SMB_1_INDICATOR', 'DUM_PRED_REG',
                                                       'DUM_PRED_CLS', 'REAL_PRED_REG', 'REAL_PRED_CLS']]
 
 for i, timesplit in enumerate(date_list):
@@ -232,8 +235,8 @@ for i, timesplit in enumerate(date_list):
     # Split into X and Y
     X_train = train[pred_vars]
     X_test = test[pred_vars]
-    y_train = train['HML_1']
-    y_test = test['HML_1']
+    y_train = train['SMB_1']
+    y_test = test['SMB_1']
 
     # Train the model
     rf.fit(X_train, y_train)
@@ -264,7 +267,7 @@ print('\n')
 
 # Define dummy variables
 pred_vars = [var for var in french_fama.columns if var not in
-             ['DUMMY_' + str(i) for i in range(5)] + ['HML', 'HML_1', 'HML_1_INDICATOR', 'DUM_PRED_REG',
+             ['DUMMY_' + str(i) for i in range(5)] + ['SMB', 'SMB_1', 'SMB_1_INDICATOR', 'DUM_PRED_REG',
                                                       'DUM_PRED_CLS', 'REAL_PRED_REG', 'REAL_PRED_CLS']]
 
 for i, timesplit in enumerate(date_list):
@@ -284,8 +287,8 @@ for i, timesplit in enumerate(date_list):
     # Split into X and Y
     X_train = train[pred_vars]
     X_test = test[pred_vars]
-    y_train = train['HML_1_INDICATOR']
-    y_test = test['HML_1_INDICATOR']
+    y_train = train['SMB_1_INDICATOR']
+    y_test = test['SMB_1_INDICATOR']
 
     # Train the model
     rf.fit(X_train, y_train)
@@ -299,7 +302,10 @@ for i, timesplit in enumerate(date_list):
     # Evaluate dummy predictions
     acc = accuracy_score(y_test, y_pred)
     bal_acc = balanced_accuracy_score(y_test, y_pred)
-    roc = roc_auc_score(y_test, y_pred)
+    try:
+        roc = roc_auc_score(y_test, y_pred)
+    except:
+        roc = 1
     prec = precision_score(y_test, y_pred)
 
     # Save results
@@ -318,20 +324,19 @@ print('\n')
 # =========================================== FINAL EVALUATION ===============================================
 
 # Evaluate one-year ahead dummy predictions
-y_test = french_fama[french_fama.index >= '1980-01-01']['HML_1_INDICATOR']
+y_test = french_fama[french_fama.index >= '1980-01-01']['SMB_1_INDICATOR']
 y_pred = french_fama[french_fama.index >= '1980-01-01']['DUM_PRED_CLS']
 
 # Create rolling accuracy of predictions
-french_fama.loc['1980-01-01':, 'DUM_CORRECT'] = (y_test == y_pred)
-french_fama['DUM_EXPANDING_ACC'] = french_fama['DUM_CORRECT'].expanding().mean()
-french_fama['DUM_ROLLING_24_ACC'] = french_fama['DUM_CORRECT'].rolling(24).mean()
+french_fama.loc['1985-01-01':, 'DUM_CORRECT'] = (y_test == y_pred)
+french_fama['DUM_ROLLING_ACC'] = french_fama['DUM_CORRECT'].expanding().mean()
 
 acc = accuracy_score(y_test, y_pred)
 bal_acc = balanced_accuracy_score(y_test, y_pred)
 roc = roc_auc_score(y_test, y_pred)
 prec = precision_score(y_test, y_pred)
 
-# Full period classification results (removed 1.5 decades since the model has too little training data)
+# Full period classification results
 print("FULL PERIOD")
 print("Dummy Clas. Model Acc.:", round(acc, 3))
 print("Dummy Clas. Model Bal. Acc.:", round(bal_acc, 3))
@@ -339,11 +344,11 @@ print("Dummy Clas. Model Roc-Auc:", round(roc, 3))
 print("Dummy Clas. Model Prec.:", round(prec, 3), '\n')
 
 # Evaluate one-year ahead predictions
-y_test = french_fama[french_fama.index >= '1980-01-01']['HML_1_INDICATOR']
+y_test = french_fama[french_fama.index >= '1980-01-01']['SMB_1_INDICATOR']
 y_pred = french_fama[french_fama.index >= '1980-01-01']['REAL_PRED_CLS']
 
 # Create rolling accuracy of predictions
-french_fama.loc['1980-01-01':, 'REAL_CORRECT'] = (y_test == y_pred)
+french_fama.loc['1985-01-01':, 'REAL_CORRECT'] = (y_test == y_pred)
 french_fama['REAL_EXPANDING_ACC'] = french_fama['REAL_CORRECT'].expanding().mean()
 french_fama['REAL_ROLLING_24_ACC'] = french_fama['REAL_CORRECT'].rolling(24).mean()
 
@@ -359,17 +364,8 @@ print("Real Clas. Model Bal. Acc.:", round(bal_acc, 3))
 print("Real Clas. Model Roc-Auc:", round(roc, 3))
 print("Real Clas. Model Prec.:", round(prec, 3), '\n')
 
-# Rolling regression predictions
-french_fama['HML_1_ROLLING_12'] = french_fama['HML_1'].rolling(12).mean()
-french_fama['REAL_PRED_REG_ROLLING_12'] = french_fama['REAL_PRED_REG'].rolling(12).mean()
-french_fama['HML_1_ROLLING_30'] = french_fama['HML_1'].rolling(30).mean()
-french_fama['REAL_PRED_REG_ROLLING_30'] = french_fama['REAL_PRED_REG'].rolling(30).mean()
-
-# Calculate rolling error
-french_fama['ERROR_ROLLING_12'] = french_fama['HML_1_ROLLING_12'] - french_fama['REAL_PRED_REG_ROLLING_12']
-
 # Save results for further analysis
-french_fama.to_csv("HML_results.csv")
+french_fama.to_csv("SMB_results.csv")
 
 # Close log file
 log_file.close()

@@ -1,287 +1,287 @@
 1967-01-01 - 1967-12-31 00:00:00
-Dummy Reg. Model R^2: -0.03
-Dummy Reg. Model MAE: 1.889
-Dummy Reg. Model MSE: 5.651 
+Dummy Reg. Model R^2: -0.175
+Dummy Reg. Model MAE: 1.993
+Dummy Reg. Model MSE: 6.443 
 
 1968-01-01 - 1968-12-30 00:00:00
-Dummy Reg. Model R^2: -0.456
-Dummy Reg. Model MAE: 1.594
-Dummy Reg. Model MSE: 4.318 
+Dummy Reg. Model R^2: -0.1
+Dummy Reg. Model MAE: 1.359
+Dummy Reg. Model MSE: 3.263 
 
 1969-01-01 - 1969-12-31 00:00:00
-Dummy Reg. Model R^2: -0.628
-Dummy Reg. Model MAE: 1.987
-Dummy Reg. Model MSE: 6.832 
+Dummy Reg. Model R^2: -0.352
+Dummy Reg. Model MAE: 1.881
+Dummy Reg. Model MSE: 5.674 
 
 1970-01-01 - 1970-12-31 00:00:00
-Dummy Reg. Model R^2: -0.35
-Dummy Reg. Model MAE: 2.41
-Dummy Reg. Model MSE: 10.027 
+Dummy Reg. Model R^2: -0.384
+Dummy Reg. Model MAE: 2.651
+Dummy Reg. Model MSE: 10.278 
 
 1971-01-01 - 1971-12-31 00:00:00
-Dummy Reg. Model R^2: -0.292
-Dummy Reg. Model MAE: 1.692
-Dummy Reg. Model MSE: 4.406 
+Dummy Reg. Model R^2: -0.344
+Dummy Reg. Model MAE: 1.848
+Dummy Reg. Model MSE: 4.585 
 
 1972-01-01 - 1972-12-30 00:00:00
-Dummy Reg. Model R^2: -0.304
-Dummy Reg. Model MAE: 2.498
-Dummy Reg. Model MSE: 8.874 
+Dummy Reg. Model R^2: -0.163
+Dummy Reg. Model MAE: 2.328
+Dummy Reg. Model MSE: 7.918 
 
 1973-01-01 - 1973-12-31 00:00:00
-Dummy Reg. Model R^2: -0.301
-Dummy Reg. Model MAE: 2.829
-Dummy Reg. Model MSE: 10.012 
+Dummy Reg. Model R^2: -0.695
+Dummy Reg. Model MAE: 3.092
+Dummy Reg. Model MSE: 13.05 
 
 1974-01-01 - 1974-12-31 00:00:00
-Dummy Reg. Model R^2: 0.07
-Dummy Reg. Model MAE: 3.009
-Dummy Reg. Model MSE: 17.688 
+Dummy Reg. Model R^2: 0.025
+Dummy Reg. Model MAE: 3.119
+Dummy Reg. Model MSE: 18.552 
 
 1975-01-01 - 1975-12-31 00:00:00
-Dummy Reg. Model R^2: -0.058
-Dummy Reg. Model MAE: 2.589
-Dummy Reg. Model MSE: 11.084 
+Dummy Reg. Model R^2: 0.346
+Dummy Reg. Model MAE: 1.994
+Dummy Reg. Model MSE: 6.849 
 
 1976-01-01 - 1976-12-30 00:00:00
-Dummy Reg. Model R^2: 0.066
-Dummy Reg. Model MAE: 1.364
-Dummy Reg. Model MSE: 3.688 
+Dummy Reg. Model R^2: 0.145
+Dummy Reg. Model MAE: 1.393
+Dummy Reg. Model MSE: 3.374 
 
 1977-01-01 - 1977-12-31 00:00:00
-Dummy Reg. Model R^2: -0.144
-Dummy Reg. Model MAE: 1.585
-Dummy Reg. Model MSE: 3.156 
+Dummy Reg. Model R^2: -0.194
+Dummy Reg. Model MAE: 1.394
+Dummy Reg. Model MSE: 3.294 
 
 1978-01-01 - 1978-12-31 00:00:00
-Dummy Reg. Model R^2: -0.643
-Dummy Reg. Model MAE: 1.828
-Dummy Reg. Model MSE: 4.915 
+Dummy Reg. Model R^2: 0.187
+Dummy Reg. Model MAE: 1.284
+Dummy Reg. Model MSE: 2.433 
 
 1979-01-01 - 1979-12-31 00:00:00
-Dummy Reg. Model R^2: 0.146
-Dummy Reg. Model MAE: 1.239
-Dummy Reg. Model MSE: 2.499 
+Dummy Reg. Model R^2: -0.249
+Dummy Reg. Model MAE: 1.559
+Dummy Reg. Model MSE: 3.653 
 
 1980-01-01 - 1980-12-30 00:00:00
-Dummy Reg. Model R^2: -0.279
-Dummy Reg. Model MAE: 3.397
-Dummy Reg. Model MSE: 19.57 
+Dummy Reg. Model R^2: -0.161
+Dummy Reg. Model MAE: 3.134
+Dummy Reg. Model MSE: 17.763 
 
 1981-01-01 - 1981-12-31 00:00:00
-Dummy Reg. Model R^2: -0.377
-Dummy Reg. Model MAE: 2.382
-Dummy Reg. Model MSE: 9.45 
+Dummy Reg. Model R^2: -0.345
+Dummy Reg. Model MAE: 2.354
+Dummy Reg. Model MSE: 9.231 
 
 1982-01-01 - 1982-12-31 00:00:00
-Dummy Reg. Model R^2: -0.192
-Dummy Reg. Model MAE: 2.28
-Dummy Reg. Model MSE: 7.922 
+Dummy Reg. Model R^2: -0.061
+Dummy Reg. Model MAE: 2.043
+Dummy Reg. Model MSE: 7.054 
 
 1983-01-01 - 1983-12-31 00:00:00
-Dummy Reg. Model R^2: 0.032
-Dummy Reg. Model MAE: 2.465
-Dummy Reg. Model MSE: 10.037 
+Dummy Reg. Model R^2: -0.03
+Dummy Reg. Model MAE: 2.623
+Dummy Reg. Model MSE: 10.679 
 
 1984-01-01 - 1984-12-30 00:00:00
-Dummy Reg. Model R^2: -0.266
-Dummy Reg. Model MAE: 2.267
-Dummy Reg. Model MSE: 9.936 
+Dummy Reg. Model R^2: -0.236
+Dummy Reg. Model MAE: 2.478
+Dummy Reg. Model MSE: 9.702 
 
 1985-01-01 - 1985-12-31 00:00:00
-Dummy Reg. Model R^2: -0.012
-Dummy Reg. Model MAE: 1.719
-Dummy Reg. Model MSE: 4.176 
+Dummy Reg. Model R^2: -0.068
+Dummy Reg. Model MAE: 1.722
+Dummy Reg. Model MSE: 4.405 
 
 1986-01-01 - 1986-12-31 00:00:00
-Dummy Reg. Model R^2: -0.183
-Dummy Reg. Model MAE: 1.979
-Dummy Reg. Model MSE: 6.51 
+Dummy Reg. Model R^2: -0.265
+Dummy Reg. Model MAE: 2.005
+Dummy Reg. Model MSE: 6.961 
 
 1987-01-01 - 1987-12-31 00:00:00
-Dummy Reg. Model R^2: 0.033
-Dummy Reg. Model MAE: 2.097
-Dummy Reg. Model MSE: 8.867 
+Dummy Reg. Model R^2: -0.037
+Dummy Reg. Model MAE: 2.465
+Dummy Reg. Model MSE: 9.508 
 
 1988-01-01 - 1988-12-30 00:00:00
-Dummy Reg. Model R^2: -0.35
-Dummy Reg. Model MAE: 1.577
-Dummy Reg. Model MSE: 3.15 
+Dummy Reg. Model R^2: -0.355
+Dummy Reg. Model MAE: 1.638
+Dummy Reg. Model MSE: 3.162 
 
 1989-01-01 - 1989-12-31 00:00:00
-Dummy Reg. Model R^2: -0.434
-Dummy Reg. Model MAE: 1.407
-Dummy Reg. Model MSE: 2.548 
+Dummy Reg. Model R^2: -0.305
+Dummy Reg. Model MAE: 1.144
+Dummy Reg. Model MSE: 2.319 
 
 1990-01-01 - 1990-12-31 00:00:00
-Dummy Reg. Model R^2: -1.13
-Dummy Reg. Model MAE: 1.889
-Dummy Reg. Model MSE: 6.08 
+Dummy Reg. Model R^2: -1.136
+Dummy Reg. Model MAE: 2.026
+Dummy Reg. Model MSE: 6.095 
 
 1991-01-01 - 1991-12-31 00:00:00
-Dummy Reg. Model R^2: -0.347
-Dummy Reg. Model MAE: 1.99
-Dummy Reg. Model MSE: 5.729 
+Dummy Reg. Model R^2: 0.041
+Dummy Reg. Model MAE: 1.719
+Dummy Reg. Model MSE: 4.078 
 
 1992-01-01 - 1992-12-30 00:00:00
-Dummy Reg. Model R^2: -0.169
-Dummy Reg. Model MAE: 2.66
-Dummy Reg. Model MSE: 9.16 
+Dummy Reg. Model R^2: -0.275
+Dummy Reg. Model MAE: 2.67
+Dummy Reg. Model MSE: 9.991 
 
 1993-01-01 - 1993-12-31 00:00:00
-Dummy Reg. Model R^2: 0.066
-Dummy Reg. Model MAE: 1.924
-Dummy Reg. Model MSE: 6.026 
+Dummy Reg. Model R^2: 0.175
+Dummy Reg. Model MAE: 1.817
+Dummy Reg. Model MSE: 5.327 
 
 1994-01-01 - 1994-12-31 00:00:00
-Dummy Reg. Model R^2: 0.169
-Dummy Reg. Model MAE: 1.171
-Dummy Reg. Model MSE: 2.137 
+Dummy Reg. Model R^2: 0.188
+Dummy Reg. Model MAE: 1.082
+Dummy Reg. Model MSE: 2.087 
 
 1995-01-01 - 1995-12-31 00:00:00
-Dummy Reg. Model R^2: -0.431
-Dummy Reg. Model MAE: 1.579
-Dummy Reg. Model MSE: 3.715 
+Dummy Reg. Model R^2: -0.122
+Dummy Reg. Model MAE: 1.386
+Dummy Reg. Model MSE: 2.913 
 
 1996-01-01 - 1996-12-30 00:00:00
-Dummy Reg. Model R^2: -0.196
-Dummy Reg. Model MAE: 2.363
-Dummy Reg. Model MSE: 8.596 
+Dummy Reg. Model R^2: -0.131
+Dummy Reg. Model MAE: 2.305
+Dummy Reg. Model MSE: 8.134 
 
 1997-01-01 - 1997-12-31 00:00:00
-Dummy Reg. Model R^2: -0.247
-Dummy Reg. Model MAE: 2.226
-Dummy Reg. Model MSE: 7.512 
+Dummy Reg. Model R^2: -0.808
+Dummy Reg. Model MAE: 2.646
+Dummy Reg. Model MSE: 10.893 
 
 1998-01-01 - 1998-12-31 00:00:00
-Dummy Reg. Model R^2: -0.601
-Dummy Reg. Model MAE: 2.859
-Dummy Reg. Model MSE: 11.572 
+Dummy Reg. Model R^2: -0.697
+Dummy Reg. Model MAE: 3.111
+Dummy Reg. Model MSE: 12.266 
 
 1999-01-01 - 1999-12-31 00:00:00
-Dummy Reg. Model R^2: -0.596
-Dummy Reg. Model MAE: 3.348
-Dummy Reg. Model MSE: 15.923 
+Dummy Reg. Model R^2: -0.614
+Dummy Reg. Model MAE: 3.547
+Dummy Reg. Model MSE: 16.097 
 
 2000-01-01 - 2000-12-30 00:00:00
-Dummy Reg. Model R^2: -0.272
-Dummy Reg. Model MAE: 7.368
-Dummy Reg. Model MSE: 61.633 
+Dummy Reg. Model R^2: -0.202
+Dummy Reg. Model MAE: 7.256
+Dummy Reg. Model MSE: 58.252 
 
 2001-01-01 - 2001-12-31 00:00:00
-Dummy Reg. Model R^2: 0.029
-Dummy Reg. Model MAE: 3.898
-Dummy Reg. Model MSE: 23.673 
+Dummy Reg. Model R^2: -0.039
+Dummy Reg. Model MAE: 3.874
+Dummy Reg. Model MSE: 25.316 
 
 2002-01-01 - 2002-12-31 00:00:00
-Dummy Reg. Model R^2: -0.079
-Dummy Reg. Model MAE: 2.269
-Dummy Reg. Model MSE: 6.357 
+Dummy Reg. Model R^2: 0.268
+Dummy Reg. Model MAE: 1.75
+Dummy Reg. Model MSE: 4.313 
 
 2003-01-01 - 2003-12-31 00:00:00
-Dummy Reg. Model R^2: 0.228
-Dummy Reg. Model MAE: 1.019
-Dummy Reg. Model MSE: 1.491 
+Dummy Reg. Model R^2: -0.026
+Dummy Reg. Model MAE: 1.096
+Dummy Reg. Model MSE: 1.982 
 
 2004-01-01 - 2004-12-30 00:00:00
-Dummy Reg. Model R^2: 0.079
-Dummy Reg. Model MAE: 1.126
-Dummy Reg. Model MSE: 2.032 
+Dummy Reg. Model R^2: -0.137
+Dummy Reg. Model MAE: 1.101
+Dummy Reg. Model MSE: 2.507 
 
 2005-01-01 - 2005-12-31 00:00:00
-Dummy Reg. Model R^2: 0.067
-Dummy Reg. Model MAE: 0.925
-Dummy Reg. Model MSE: 1.222 
+Dummy Reg. Model R^2: -0.102
+Dummy Reg. Model MAE: 0.862
+Dummy Reg. Model MSE: 1.443 
 
 2006-01-01 - 2006-12-31 00:00:00
-Dummy Reg. Model R^2: -0.571
-Dummy Reg. Model MAE: 1.549
-Dummy Reg. Model MSE: 3.363 
+Dummy Reg. Model R^2: -0.172
+Dummy Reg. Model MAE: 1.289
+Dummy Reg. Model MSE: 2.51 
 
 2007-01-01 - 2007-12-31 00:00:00
-Dummy Reg. Model R^2: -0.777
-Dummy Reg. Model MAE: 2.14
-Dummy Reg. Model MSE: 5.837 
+Dummy Reg. Model R^2: -1.574
+Dummy Reg. Model MAE: 2.469
+Dummy Reg. Model MSE: 8.456 
 
 2008-01-01 - 2008-12-30 00:00:00
-Dummy Reg. Model R^2: -0.218
-Dummy Reg. Model MAE: 3.391
-Dummy Reg. Model MSE: 24.115 
+Dummy Reg. Model R^2: -0.254
+Dummy Reg. Model MAE: 3.489
+Dummy Reg. Model MSE: 24.819 
 
 2009-01-01 - 2009-12-31 00:00:00
-Dummy Reg. Model R^2: 0.129
-Dummy Reg. Model MAE: 2.927
-Dummy Reg. Model MSE: 13.873 
+Dummy Reg. Model R^2: -0.055
+Dummy Reg. Model MAE: 3.06
+Dummy Reg. Model MSE: 16.803 
 
 2010-01-01 - 2010-12-31 00:00:00
-Dummy Reg. Model R^2: -0.164
-Dummy Reg. Model MAE: 2.55
-Dummy Reg. Model MSE: 8.325 
+Dummy Reg. Model R^2: -0.04
+Dummy Reg. Model MAE: 2.41
+Dummy Reg. Model MSE: 7.438 
 
 2011-01-01 - 2011-12-31 00:00:00
-Dummy Reg. Model R^2: -1.28
-Dummy Reg. Model MAE: 1.639
-Dummy Reg. Model MSE: 3.801 
+Dummy Reg. Model R^2: -1.545
+Dummy Reg. Model MAE: 1.854
+Dummy Reg. Model MSE: 4.244 
 
 2012-01-01 - 2012-12-30 00:00:00
-Dummy Reg. Model R^2: -0.091
-Dummy Reg. Model MAE: 1.143
-Dummy Reg. Model MSE: 2.33 
+Dummy Reg. Model R^2: -0.596
+Dummy Reg. Model MAE: 1.304
+Dummy Reg. Model MSE: 3.408 
 
 2013-01-01 - 2013-12-31 00:00:00
-Dummy Reg. Model R^2: -0.979
-Dummy Reg. Model MAE: 1.467
-Dummy Reg. Model MSE: 3.646 
+Dummy Reg. Model R^2: -0.415
+Dummy Reg. Model MAE: 1.259
+Dummy Reg. Model MSE: 2.608 
 
 2014-01-01 - 2014-12-31 00:00:00
-Dummy Reg. Model R^2: -0.161
-Dummy Reg. Model MAE: 1.711
-Dummy Reg. Model MSE: 5.643 
+Dummy Reg. Model R^2: -0.418
+Dummy Reg. Model MAE: 1.986
+Dummy Reg. Model MSE: 6.89 
 
 2015-01-01 - 2015-12-31 00:00:00
-Dummy Reg. Model R^2: -0.112
-Dummy Reg. Model MAE: 1.579
-Dummy Reg. Model MSE: 4.053 
+Dummy Reg. Model R^2: 0.094
+Dummy Reg. Model MAE: 1.413
+Dummy Reg. Model MSE: 3.301 
 
 2016-01-01 - 2016-12-30 00:00:00
-Dummy Reg. Model R^2: -0.144
-Dummy Reg. Model MAE: 2.702
-Dummy Reg. Model MSE: 11.21 
+Dummy Reg. Model R^2: -0.131
+Dummy Reg. Model MAE: 2.905
+Dummy Reg. Model MSE: 11.082 
 
 2017-01-01 - 2017-12-31 00:00:00
-Dummy Reg. Model R^2: -0.472
-Dummy Reg. Model MAE: 1.783
-Dummy Reg. Model MSE: 5.287 
+Dummy Reg. Model R^2: -0.874
+Dummy Reg. Model MAE: 2.153
+Dummy Reg. Model MSE: 6.732 
 
 2018-01-01 - 2018-12-31 00:00:00
-Dummy Reg. Model R^2: -0.449
-Dummy Reg. Model MAE: 1.841
-Dummy Reg. Model MSE: 5.15 
+Dummy Reg. Model R^2: -0.439
+Dummy Reg. Model MAE: 1.801
+Dummy Reg. Model MSE: 5.115 
 
 2019-01-01 - 2019-12-31 00:00:00
-Dummy Reg. Model R^2: -0.249
-Dummy Reg. Model MAE: 3.223
-Dummy Reg. Model MSE: 14.359 
+Dummy Reg. Model R^2: -0.344
+Dummy Reg. Model MAE: 3.225
+Dummy Reg. Model MSE: 15.45 
 
 2020-01-01 - 2020-12-30 00:00:00
-Dummy Reg. Model R^2: -0.219
-Dummy Reg. Model MAE: 3.571
-Dummy Reg. Model MSE: 23.945 
+Dummy Reg. Model R^2: -0.324
+Dummy Reg. Model MAE: 3.73
+Dummy Reg. Model MSE: 26.006 
 
 2021-01-01 - 2021-12-31 00:00:00
-Dummy Reg. Model R^2: -0.13
-Dummy Reg. Model MAE: 4.472
-Dummy Reg. Model MSE: 32.134 
+Dummy Reg. Model R^2: -0.075
+Dummy Reg. Model MAE: 4.375
+Dummy Reg. Model MSE: 30.569 
 
 2022-01-01 - 2022-12-31 00:00:00
-Dummy Reg. Model R^2: 0.042
-Dummy Reg. Model MAE: 3.505
-Dummy Reg. Model MSE: 19.439 
+Dummy Reg. Model R^2: -0.042
+Dummy Reg. Model MAE: 3.78
+Dummy Reg. Model MSE: 21.153 
 
 2023-01-01 - 2023-12-31 00:00:00
-Dummy Reg. Model R^2: -0.305
-Dummy Reg. Model MAE: 3.961
-Dummy Reg. Model MSE: 29.833 
+Dummy Reg. Model R^2: -0.192
+Dummy Reg. Model MAE: 3.973
+Dummy Reg. Model MSE: 27.265 
 
 
 
@@ -292,94 +292,94 @@ Dummy Clas. Model Roc-Auc: 0.5
 Dummy Clas. Model Prec.: 0.5 
 
 1968-01-01 - 1968-12-30 00:00:00
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.625
+Dummy Clas. Model Roc-Auc: 0.625
+Dummy Clas. Model Prec.: 0.727 
+
+1969-01-01 - 1969-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Bal. Acc.: 0.438
+Dummy Clas. Model Roc-Auc: 0.438
+Dummy Clas. Model Prec.: 0.286 
+
+1970-01-01 - 1970-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Bal. Acc.: 0.682
+Dummy Clas. Model Roc-Auc: 0.682
+Dummy Clas. Model Prec.: 1.0 
+
+1971-01-01 - 1971-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.25
+Dummy Clas. Model Bal. Acc.: 0.312
+Dummy Clas. Model Roc-Auc: 0.312
+Dummy Clas. Model Prec.: 0.222 
+
+1972-01-01 - 1972-12-30 00:00:00
+Dummy Clas. Model Acc.: 0.667
+Dummy Clas. Model Bal. Acc.: 0.657
+Dummy Clas. Model Roc-Auc: 0.657
+Dummy Clas. Model Prec.: 0.714 
+
+1973-01-01 - 1973-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Bal. Acc.: 0.227
+Dummy Clas. Model Roc-Auc: 0.227
+Dummy Clas. Model Prec.: 0.833 
+
+1974-01-01 - 1974-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.667
+Dummy Clas. Model Bal. Acc.: 0.562
+Dummy Clas. Model Roc-Auc: 0.562
+Dummy Clas. Model Prec.: 0.7 
+
+1975-01-01 - 1975-12-31 00:00:00
 Dummy Clas. Model Acc.: 0.5
 Dummy Clas. Model Bal. Acc.: 0.438
 Dummy Clas. Model Roc-Auc: 0.438
 Dummy Clas. Model Prec.: 0.625 
 
-1969-01-01 - 1969-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.625
-Dummy Clas. Model Roc-Auc: 0.625
-Dummy Clas. Model Prec.: 0.4 
-
-1970-01-01 - 1970-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.75
-Dummy Clas. Model Bal. Acc.: 0.409
-Dummy Clas. Model Roc-Auc: 0.409
-Dummy Clas. Model Prec.: 0.9 
-
-1971-01-01 - 1971-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.562
-Dummy Clas. Model Roc-Auc: 0.562
-Dummy Clas. Model Prec.: 0.364 
-
-1972-01-01 - 1972-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.586
-Dummy Clas. Model Roc-Auc: 0.586
-Dummy Clas. Model Prec.: 0.667 
-
-1973-01-01 - 1973-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.818
-Dummy Clas. Model Roc-Auc: 0.818
-Dummy Clas. Model Prec.: 1.0 
-
-1974-01-01 - 1974-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.833
-Dummy Clas. Model Bal. Acc.: 0.75
-Dummy Clas. Model Roc-Auc: 0.75
-Dummy Clas. Model Prec.: 0.8 
-
-1975-01-01 - 1975-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.562
-Dummy Clas. Model Roc-Auc: 0.562
-Dummy Clas. Model Prec.: 0.7 
-
 1976-01-01 - 1976-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.429
-Dummy Clas. Model Roc-Auc: 0.429
-Dummy Clas. Model Prec.: 0.545 
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.729
+Dummy Clas. Model Roc-Auc: 0.729
+Dummy Clas. Model Prec.: 0.75 
 
 1977-01-01 - 1977-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.6
-Dummy Clas. Model Roc-Auc: 0.6
-Dummy Clas. Model Prec.: 0.636 
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.557
+Dummy Clas. Model Roc-Auc: 0.557
+Dummy Clas. Model Prec.: 0.625 
 
 1978-01-01 - 1978-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.333
-Dummy Clas. Model Bal. Acc.: 0.333
-Dummy Clas. Model Roc-Auc: 0.333
-Dummy Clas. Model Prec.: 0.4 
+Dummy Clas. Model Acc.: 0.5
+Dummy Clas. Model Bal. Acc.: 0.5
+Dummy Clas. Model Roc-Auc: 0.5
+Dummy Clas. Model Prec.: 0.5 
 
 1979-01-01 - 1979-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.667
-Dummy Clas. Model Roc-Auc: 0.667
-Dummy Clas. Model Prec.: 0.6 
+Dummy Clas. Model Acc.: 0.5
+Dummy Clas. Model Bal. Acc.: 0.5
+Dummy Clas. Model Roc-Auc: 0.5
+Dummy Clas. Model Prec.: 0.5 
 
 1980-01-01 - 1980-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.25
-Dummy Clas. Model Bal. Acc.: 0.3
-Dummy Clas. Model Roc-Auc: 0.3
-Dummy Clas. Model Prec.: 0.3 
+Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Bal. Acc.: 0.471
+Dummy Clas. Model Roc-Auc: 0.471
+Dummy Clas. Model Prec.: 0.4 
 
 1981-01-01 - 1981-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.389
-Dummy Clas. Model Roc-Auc: 0.389
-Dummy Clas. Model Prec.: 0.7 
+Dummy Clas. Model Acc.: 0.667
+Dummy Clas. Model Bal. Acc.: 0.556
+Dummy Clas. Model Roc-Auc: 0.556
+Dummy Clas. Model Prec.: 0.778 
 
 1982-01-01 - 1982-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.357
-Dummy Clas. Model Roc-Auc: 0.357
-Dummy Clas. Model Prec.: 0.5 
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.529
+Dummy Clas. Model Roc-Auc: 0.529
+Dummy Clas. Model Prec.: 0.6 
 
 1983-01-01 - 1983-12-31 00:00:00
 Dummy Clas. Model Acc.: 0.75
@@ -388,52 +388,52 @@ Dummy Clas. Model Roc-Auc: 0.611
 Dummy Clas. Model Prec.: 0.8 
 
 1984-01-01 - 1984-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.375
-Dummy Clas. Model Roc-Auc: 0.375
-Dummy Clas. Model Prec.: 0.6 
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.438
+Dummy Clas. Model Roc-Auc: 0.438
+Dummy Clas. Model Prec.: 0.636 
 
 1985-01-01 - 1985-12-31 00:00:00
 Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.6
-Dummy Clas. Model Roc-Auc: 0.6
-Dummy Clas. Model Prec.: 0.636 
+Dummy Clas. Model Bal. Acc.: 0.629
+Dummy Clas. Model Roc-Auc: 0.629
+Dummy Clas. Model Prec.: 0.667 
 
 1986-01-01 - 1986-12-31 00:00:00
 Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.5
-Dummy Clas. Model Roc-Auc: 0.5
-Dummy Clas. Model Prec.: 0.417 
+Dummy Clas. Model Bal. Acc.: 0.471
+Dummy Clas. Model Roc-Auc: 0.471
+Dummy Clas. Model Prec.: 0.4 
 
 1987-01-01 - 1987-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.5
-Dummy Clas. Model Roc-Auc: 0.5
-Dummy Clas. Model Prec.: 0.667 
+Dummy Clas. Model Acc.: 0.667
+Dummy Clas. Model Bal. Acc.: 0.562
+Dummy Clas. Model Roc-Auc: 0.562
+Dummy Clas. Model Prec.: 0.7 
 
 1988-01-01 - 1988-12-30 00:00:00
 Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.5
-Dummy Clas. Model Roc-Auc: 0.5
-Dummy Clas. Model Prec.: 0.667 
+Dummy Clas. Model Bal. Acc.: 0.438
+Dummy Clas. Model Roc-Auc: 0.438
+Dummy Clas. Model Prec.: 0.636 
 
 1989-01-01 - 1989-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.583
-Dummy Clas. Model Roc-Auc: 0.583
-Dummy Clas. Model Prec.: 0.545 
+Dummy Clas. Model Acc.: 0.667
+Dummy Clas. Model Bal. Acc.: 0.667
+Dummy Clas. Model Roc-Auc: 0.667
+Dummy Clas. Model Prec.: 0.6 
 
 1990-01-01 - 1990-12-31 00:00:00
 Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.688
-Dummy Clas. Model Roc-Auc: 0.688
-Dummy Clas. Model Prec.: 0.444 
+Dummy Clas. Model Bal. Acc.: 0.625
+Dummy Clas. Model Roc-Auc: 0.625
+Dummy Clas. Model Prec.: 0.429 
 
 1991-01-01 - 1991-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.167
-Dummy Clas. Model Bal. Acc.: 0.333
-Dummy Clas. Model Roc-Auc: 0.333
-Dummy Clas. Model Prec.: 0.182 
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.722
+Dummy Clas. Model Roc-Auc: 0.722
+Dummy Clas. Model Prec.: 0.375 
 
 1992-01-01 - 1992-12-30 00:00:00
 Dummy Clas. Model Acc.: 0.5
@@ -442,106 +442,106 @@ Dummy Clas. Model Roc-Auc: 0.457
 Dummy Clas. Model Prec.: 0.556 
 
 1993-01-01 - 1993-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.625
-Dummy Clas. Model Roc-Auc: 0.625
-Dummy Clas. Model Prec.: 0.75 
-
-1994-01-01 - 1994-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.667
-Dummy Clas. Model Roc-Auc: 0.667
-Dummy Clas. Model Prec.: 0.6 
-
-1995-01-01 - 1995-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.386
-Dummy Clas. Model Roc-Auc: 0.386
-Dummy Clas. Model Prec.: 0.5 
-
-1996-01-01 - 1996-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.333
-Dummy Clas. Model Bal. Acc.: 0.333
-Dummy Clas. Model Roc-Auc: 0.333
-Dummy Clas. Model Prec.: 0.333 
-
-1997-01-01 - 1997-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.45
-Dummy Clas. Model Roc-Auc: 0.45
-Dummy Clas. Model Prec.: 0.8 
-
-1998-01-01 - 1998-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.625
-Dummy Clas. Model Roc-Auc: 0.625
-Dummy Clas. Model Prec.: 0.429 
-
-1999-01-01 - 1999-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.611
-Dummy Clas. Model Roc-Auc: 0.611
-Dummy Clas. Model Prec.: 0.3 
-
-2000-01-01 - 2000-12-30 00:00:00
 Dummy Clas. Model Acc.: 0.5
 Dummy Clas. Model Bal. Acc.: 0.375
 Dummy Clas. Model Roc-Auc: 0.375
 Dummy Clas. Model Prec.: 0.6 
 
+1994-01-01 - 1994-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.583
+Dummy Clas. Model Roc-Auc: 0.583
+Dummy Clas. Model Prec.: 0.571 
+
+1995-01-01 - 1995-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.529
+Dummy Clas. Model Roc-Auc: 0.529
+Dummy Clas. Model Prec.: 0.6 
+
+1996-01-01 - 1996-12-30 00:00:00
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.583
+Dummy Clas. Model Roc-Auc: 0.583
+Dummy Clas. Model Prec.: 0.556 
+
+1997-01-01 - 1997-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.25
+Dummy Clas. Model Bal. Acc.: 0.15
+Dummy Clas. Model Roc-Auc: 0.15
+Dummy Clas. Model Prec.: 0.6 
+
+1998-01-01 - 1998-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.333
+Dummy Clas. Model Bal. Acc.: 0.5
+Dummy Clas. Model Roc-Auc: 0.5
+Dummy Clas. Model Prec.: 0.333 
+
+1999-01-01 - 1999-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.333
+Dummy Clas. Model Bal. Acc.: 0.444
+Dummy Clas. Model Roc-Auc: 0.444
+Dummy Clas. Model Prec.: 0.222 
+
+2000-01-01 - 2000-12-30 00:00:00
+Dummy Clas. Model Acc.: 0.25
+Dummy Clas. Model Bal. Acc.: 0.188
+Dummy Clas. Model Roc-Auc: 0.188
+Dummy Clas. Model Prec.: 0.429 
+
 2001-01-01 - 2001-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.556
-Dummy Clas. Model Roc-Auc: 0.556
-Dummy Clas. Model Prec.: 0.778 
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.722
+Dummy Clas. Model Roc-Auc: 0.722
+Dummy Clas. Model Prec.: 0.875 
 
 2002-01-01 - 2002-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.429
-Dummy Clas. Model Roc-Auc: 0.429
-Dummy Clas. Model Prec.: 0.545 
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.729
+Dummy Clas. Model Roc-Auc: 0.729
+Dummy Clas. Model Prec.: 0.75 
 
 2003-01-01 - 2003-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.556
-Dummy Clas. Model Roc-Auc: 0.556
-Dummy Clas. Model Prec.: 0.8 
+Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Bal. Acc.: 0.278
+Dummy Clas. Model Roc-Auc: 0.278
+Dummy Clas. Model Prec.: 0.625 
 
 2004-01-01 - 2004-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.5
-Dummy Clas. Model Roc-Auc: 0.5
-Dummy Clas. Model Prec.: 0.667 
+Dummy Clas. Model Acc.: 0.5
+Dummy Clas. Model Bal. Acc.: 0.375
+Dummy Clas. Model Roc-Auc: 0.375
+Dummy Clas. Model Prec.: 0.6 
 
 2005-01-01 - 2005-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.833
-Dummy Clas. Model Bal. Acc.: 0.667
-Dummy Clas. Model Roc-Auc: 0.667
-Dummy Clas. Model Prec.: 0.818 
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.611
+Dummy Clas. Model Roc-Auc: 0.611
+Dummy Clas. Model Prec.: 0.8 
 
 2006-01-01 - 2006-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.5
-Dummy Clas. Model Roc-Auc: 0.5
-Dummy Clas. Model Prec.: 0.667 
+Dummy Clas. Model Acc.: 0.667
+Dummy Clas. Model Bal. Acc.: 0.562
+Dummy Clas. Model Roc-Auc: 0.562
+Dummy Clas. Model Prec.: 0.7 
 
 2007-01-01 - 2007-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.0
-Dummy Clas. Model Bal. Acc.: 0.0
-Dummy Clas. Model Roc-Auc: 0.0
-Dummy Clas. Model Prec.: 0.0 
+Dummy Clas. Model Acc.: 0.083
+Dummy Clas. Model Bal. Acc.: 0.5
+Dummy Clas. Model Roc-Auc: 0.5
+Dummy Clas. Model Prec.: 0.083 
 
 2008-01-01 - 2008-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.333
-Dummy Clas. Model Bal. Acc.: 0.4
-Dummy Clas. Model Roc-Auc: 0.4
-Dummy Clas. Model Prec.: 0.364 
+Dummy Clas. Model Acc.: 0.583
+Dummy Clas. Model Bal. Acc.: 0.643
+Dummy Clas. Model Roc-Auc: 0.643
+Dummy Clas. Model Prec.: 0.5 
 
 2009-01-01 - 2009-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.386
-Dummy Clas. Model Roc-Auc: 0.386
-Dummy Clas. Model Prec.: 0.5 
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.7
+Dummy Clas. Model Roc-Auc: 0.7
+Dummy Clas. Model Prec.: 0.7 
 
 2010-01-01 - 2010-12-31 00:00:00
 Dummy Clas. Model Acc.: 0.5
@@ -550,82 +550,82 @@ Dummy Clas. Model Roc-Auc: 0.543
 Dummy Clas. Model Prec.: 0.444 
 
 2011-01-01 - 2011-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Acc.: 0.25
 Dummy Clas. Model Bal. Acc.: 0.389
 Dummy Clas. Model Roc-Auc: 0.389
-Dummy Clas. Model Prec.: 0.167 
+Dummy Clas. Model Prec.: 0.2 
 
 2012-01-01 - 2012-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.667
-Dummy Clas. Model Bal. Acc.: 0.562
-Dummy Clas. Model Roc-Auc: 0.562
-Dummy Clas. Model Prec.: 0.7 
+Dummy Clas. Model Acc.: 0.5
+Dummy Clas. Model Bal. Acc.: 0.438
+Dummy Clas. Model Roc-Auc: 0.438
+Dummy Clas. Model Prec.: 0.625 
 
 2013-01-01 - 2013-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.357
-Dummy Clas. Model Roc-Auc: 0.357
-Dummy Clas. Model Prec.: 0.5 
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.729
+Dummy Clas. Model Roc-Auc: 0.729
+Dummy Clas. Model Prec.: 0.75 
 
 2014-01-01 - 2014-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.625
-Dummy Clas. Model Roc-Auc: 0.625
-Dummy Clas. Model Prec.: 0.4 
+Dummy Clas. Model Acc.: 0.667
+Dummy Clas. Model Bal. Acc.: 0.75
+Dummy Clas. Model Roc-Auc: 0.75
+Dummy Clas. Model Prec.: 0.5 
 
 2015-01-01 - 2015-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.75
+Dummy Clas. Model Bal. Acc.: 0.812
+Dummy Clas. Model Roc-Auc: 0.812
+Dummy Clas. Model Prec.: 0.571 
+
+2016-01-01 - 2016-12-30 00:00:00
+Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Bal. Acc.: 0.417
+Dummy Clas. Model Roc-Auc: 0.417
+Dummy Clas. Model Prec.: 0.444 
+
+2017-01-01 - 2017-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.333
+Dummy Clas. Model Bal. Acc.: 0.375
+Dummy Clas. Model Roc-Auc: 0.375
+Dummy Clas. Model Prec.: 0.25 
+
+2018-01-01 - 2018-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.333
+Dummy Clas. Model Bal. Acc.: 0.312
+Dummy Clas. Model Roc-Auc: 0.312
+Dummy Clas. Model Prec.: 0.167 
+
+2019-01-01 - 2019-12-31 00:00:00
 Dummy Clas. Model Acc.: 0.667
 Dummy Clas. Model Bal. Acc.: 0.688
 Dummy Clas. Model Roc-Auc: 0.688
 Dummy Clas. Model Prec.: 0.5 
 
-2016-01-01 - 2016-12-30 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.5
-Dummy Clas. Model Roc-Auc: 0.5
-Dummy Clas. Model Prec.: 0.5 
-
-2017-01-01 - 2017-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.562
-Dummy Clas. Model Roc-Auc: 0.562
-Dummy Clas. Model Prec.: 0.375 
-
-2018-01-01 - 2018-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.417
-Dummy Clas. Model Bal. Acc.: 0.438
-Dummy Clas. Model Roc-Auc: 0.438
-Dummy Clas. Model Prec.: 0.286 
-
-2019-01-01 - 2019-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.5
-Dummy Clas. Model Roc-Auc: 0.5
-Dummy Clas. Model Prec.: 0.333 
-
 2020-01-01 - 2020-12-30 00:00:00
 Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.667
-Dummy Clas. Model Roc-Auc: 0.667
-Dummy Clas. Model Prec.: 0.333 
+Dummy Clas. Model Bal. Acc.: 0.556
+Dummy Clas. Model Roc-Auc: 0.556
+Dummy Clas. Model Prec.: 0.286 
 
 2021-01-01 - 2021-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.583
-Dummy Clas. Model Roc-Auc: 0.583
-Dummy Clas. Model Prec.: 0.556 
+Dummy Clas. Model Acc.: 0.417
+Dummy Clas. Model Bal. Acc.: 0.417
+Dummy Clas. Model Roc-Auc: 0.417
+Dummy Clas. Model Prec.: 0.444 
 
 2022-01-01 - 2022-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.583
-Dummy Clas. Model Bal. Acc.: 0.562
-Dummy Clas. Model Roc-Auc: 0.562
-Dummy Clas. Model Prec.: 0.714 
+Dummy Clas. Model Acc.: 0.167
+Dummy Clas. Model Bal. Acc.: 0.125
+Dummy Clas. Model Roc-Auc: 0.125
+Dummy Clas. Model Prec.: 0.333 
 
 2023-01-01 - 2023-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.286
-Dummy Clas. Model Bal. Acc.: 0.35
-Dummy Clas. Model Roc-Auc: 0.35
-Dummy Clas. Model Prec.: 0.2 
+Dummy Clas. Model Acc.: 0.571
+Dummy Clas. Model Bal. Acc.: 0.7
+Dummy Clas. Model Roc-Auc: 0.7
+Dummy Clas. Model Prec.: 0.4 
 
 
 
@@ -1261,13 +1261,14 @@ Real Clas. Model Prec.: 0.0
 
 
 FULL PERIOD
-Dummy Clas. Model Acc.: 0.52
-Dummy Clas. Model Bal. Acc.: 0.503
-Dummy Clas. Model Roc-Auc: 0.503
-Dummy Clas. Model Prec.: 0.535 
+Dummy Clas. Model Acc.: 0.526
+Dummy Clas. Model Bal. Acc.: 0.519
+Dummy Clas. Model Roc-Auc: 0.519
+Dummy Clas. Model Prec.: 0.527 
 
 FULL PERIOD
-Real Clas. Model Acc.: 0.564
-Real Clas. Model Bal. Acc.: 0.559
-Real Clas. Model Roc-Auc: 0.559
-Real Clas. Model Prec.: 0.583 
+Real Clas. Model Acc.: 0.585
+Real Clas. Model Bal. Acc.: 0.583
+Real Clas. Model Roc-Auc: 0.583
+Real Clas. Model Prec.: 0.589 
+
