@@ -74,7 +74,10 @@ for var in ['BUSLOANS', 'CPIAUCSL', 'FGEXPND', 'GDPC1']:
     french_fama[var] = (french_fama[var] / french_fama[var].shift(12) - 1) * 100
 
 # Shift outcome variable to prevent predicting on concurrent information
-french_fama['SMB_1'] = french_fama['SMB'].shift(-1)
+french_fama['SMB_1'] = french_fama['SMB'].shift(-3)
+
+# Fill SMB 1
+french_fama.loc['2023-09-01', 'SMB_1'] = 1
 
 # Create  rolling averages as extra features
 for var in [var for var in french_fama.columns if var not in ['SMB_1']]:
@@ -93,9 +96,6 @@ french_fama['MONTH'] = french_fama.index.month
 
 # Drop missing values
 french_fama.dropna(inplace=True)
-
-# Subset for data availability
-french_fama = french_fama[french_fama.index <= '2023-07-01']
 
 # ===================================== DEFINE RETRAINING INTERVALS ======================================
 start_year = 1967
@@ -117,8 +117,8 @@ for i, timesplit in enumerate(date_list):
     # Initialize basic model
     rf_dummy = RandomForestRegressor(random_state=42,
                                      n_jobs=-1,
-                                     n_estimators=100,
-                                     max_features=0.3)
+                                     n_estimators=70,
+                                     max_features=.3)
 
     # Timesplit train- and test data
     train = french_fama[french_fama.index < timesplit]
@@ -165,8 +165,8 @@ for i, timesplit in enumerate(date_list):
     # Initialize basic model
     rf_dummy = RandomForestClassifier(random_state=42,
                                       n_jobs=-1,
-                                      n_estimators=100,
-                                      max_features=0.3)
+                                      n_estimators=70,
+                                      max_features=.3)
 
     # Timesplit train- and test data
     train = french_fama[french_fama.index < timesplit]
@@ -224,8 +224,8 @@ for i, timesplit in enumerate(date_list):
     # Initialize basic model
     rf = RandomForestRegressor(random_state=42,
                                n_jobs=-1,
-                               n_estimators=100,
-                               max_features=0.3)
+                               n_estimators=70,
+                               max_features=.3)
 
     # Timesplit train- and test data
     train = french_fama[french_fama.index < timesplit]
@@ -275,8 +275,8 @@ for i, timesplit in enumerate(date_list):
     # Initialize basic model
     rf = RandomForestClassifier(random_state=42,
                                 n_jobs=-1,
-                                n_estimators=100,
-                                max_features=0.3)
+                                n_estimators=70,
+                                max_features=.3)
 
 
     # Timesplit train- and test data
@@ -295,9 +295,12 @@ for i, timesplit in enumerate(date_list):
 
     # Predict on test data
     y_pred = rf.predict(X_test)
+    y_pred_proba = rf.predict_proba(X_test)
 
     # Add predictions to dataframe
     french_fama.loc[str(timesplit):str(pd.to_datetime(timesplit) + pd.Timedelta(days=364)), 'REAL_PRED_CLS'] = y_pred
+    french_fama.loc[str(timesplit):str(pd.to_datetime(timesplit) + pd.Timedelta(days=364)), 'REAL_PRED_PROBA_CLS'] = \
+        y_pred_proba[:, 1]
 
     # Evaluate dummy predictions
     acc = accuracy_score(y_test, y_pred)
@@ -324,8 +327,8 @@ print('\n')
 # =========================================== FINAL EVALUATION ===============================================
 
 # Evaluate one-year ahead dummy predictions
-y_test = french_fama[french_fama.index >= '1980-01-01']['SMB_1_INDICATOR']
-y_pred = french_fama[french_fama.index >= '1980-01-01']['DUM_PRED_CLS']
+y_test = french_fama[(french_fama.index >= '1985-01-01') & (french_fama.index <= '2023-06-01')]['SMB_1_INDICATOR']
+y_pred = french_fama[(french_fama.index >= '1985-01-01') & (french_fama.index <= '2023-06-01')]['DUM_PRED_CLS']
 
 # Create rolling accuracy of predictions
 french_fama.loc['1985-01-01':, 'DUM_CORRECT'] = (y_test == y_pred)
@@ -344,8 +347,8 @@ print("Dummy Clas. Model Roc-Auc:", round(roc, 3))
 print("Dummy Clas. Model Prec.:", round(prec, 3), '\n')
 
 # Evaluate one-year ahead predictions
-y_test = french_fama[french_fama.index >= '1980-01-01']['SMB_1_INDICATOR']
-y_pred = french_fama[french_fama.index >= '1980-01-01']['REAL_PRED_CLS']
+y_test = french_fama[(french_fama.index >= '1985-01-01') & (french_fama.index <= '2023-06-01')]['SMB_1_INDICATOR']
+y_pred = french_fama[(french_fama.index >= '1985-01-01') & (french_fama.index <= '2023-06-01')]['REAL_PRED_CLS']
 
 # Create rolling accuracy of predictions
 french_fama.loc['1985-01-01':, 'REAL_CORRECT'] = (y_test == y_pred)
@@ -363,6 +366,12 @@ print("Real Clas. Model Acc.:", round(acc, 3))
 print("Real Clas. Model Bal. Acc.:", round(bal_acc, 3))
 print("Real Clas. Model Roc-Auc:", round(roc, 3))
 print("Real Clas. Model Prec.:", round(prec, 3), '\n')
+
+# Filter rows where the predicted probability is higher than 60% and calculate balanced accuracy
+for num, val in zip([0.6, 0.65], ['60', '65']):
+    high_prob_rows = french_fama[french_fama['REAL_PRED_PROBA_CLS'] > num]
+    accuracy_high_prob = accuracy_score(high_prob_rows['SMB_1_INDICATOR'], high_prob_rows['REAL_PRED_CLS'])
+    print(f'Accuracy for predictions with probability > {val}%: {accuracy_high_prob:.4f}', '\n')
 
 # Save results for further analysis
 french_fama.to_csv("SMB_results.csv")
