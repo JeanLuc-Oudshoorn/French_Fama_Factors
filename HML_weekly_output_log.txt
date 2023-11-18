@@ -1,0 +1,176 @@
+2014-01-01 - 2015-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.615
+Dummy Clas. Model Bal. Acc.: 0.604
+Dummy Clas. Model Roc-Auc: 0.604
+Dummy Clas. Model Prec.: 0.611 
+
+2015-01-01 - 2016-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.377
+Dummy Clas. Model Bal. Acc.: 0.372
+Dummy Clas. Model Roc-Auc: 0.372
+Dummy Clas. Model Prec.: 0.259 
+
+2016-01-01 - 2016-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.585
+Dummy Clas. Model Bal. Acc.: 0.599
+Dummy Clas. Model Roc-Auc: 0.599
+Dummy Clas. Model Prec.: 0.696 
+
+2017-01-01 - 2018-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.558
+Dummy Clas. Model Bal. Acc.: 0.566
+Dummy Clas. Model Roc-Auc: 0.566
+Dummy Clas. Model Prec.: 0.385 
+
+2018-01-01 - 2019-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.519
+Dummy Clas. Model Bal. Acc.: 0.521
+Dummy Clas. Model Roc-Auc: 0.521
+Dummy Clas. Model Prec.: 0.542 
+
+2019-01-01 - 2020-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.423
+Dummy Clas. Model Bal. Acc.: 0.423
+Dummy Clas. Model Roc-Auc: 0.423
+Dummy Clas. Model Prec.: 0.385 
+
+2020-01-01 - 2020-12-31 00:00:00
+Dummy Clas. Model Acc.: 0.442
+Dummy Clas. Model Bal. Acc.: 0.444
+Dummy Clas. Model Roc-Auc: 0.444
+Dummy Clas. Model Prec.: 0.333 
+
+2021-01-01 - 2022-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.509
+Dummy Clas. Model Bal. Acc.: 0.527
+Dummy Clas. Model Roc-Auc: 0.527
+Dummy Clas. Model Prec.: 0.652 
+
+2022-01-01 - 2023-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.462
+Dummy Clas. Model Bal. Acc.: 0.473
+Dummy Clas. Model Roc-Auc: 0.473
+Dummy Clas. Model Prec.: 0.545 
+
+2023-01-01 - 2024-01-01 00:00:00
+Dummy Clas. Model Acc.: 0.5
+Dummy Clas. Model Bal. Acc.: 0.479
+Dummy Clas. Model Roc-Auc: 0.479
+Dummy Clas. Model Prec.: 0.417 
+
+
+
+2014-01-01 - 2015-01-01 00:00:00
+Real Clas. Model Acc.: 0.615
+Real Clas. Model Bal. Acc.: 0.601
+Real Clas. Model Roc-Auc: 0.601
+Real Clas. Model Prec.: 0.625 
+
+2015-01-01 - 2016-01-01 00:00:00
+Real Clas. Model Acc.: 0.509
+Real Clas. Model Bal. Acc.: 0.478
+Real Clas. Model Roc-Auc: 0.478
+Real Clas. Model Prec.: 0.35 
+
+2016-01-01 - 2016-12-31 00:00:00
+Real Clas. Model Acc.: 0.547
+Real Clas. Model Bal. Acc.: 0.547
+Real Clas. Model Roc-Auc: 0.547
+Real Clas. Model Prec.: 0.63 
+
+2017-01-01 - 2018-01-01 00:00:00
+Real Clas. Model Acc.: 0.635
+Real Clas. Model Bal. Acc.: 0.577
+Real Clas. Model Roc-Auc: 0.577
+Real Clas. Model Prec.: 0.438 
+
+2018-01-01 - 2019-01-01 00:00:00
+Real Clas. Model Acc.: 0.596
+Real Clas. Model Bal. Acc.: 0.602
+Real Clas. Model Roc-Auc: 0.602
+Real Clas. Model Prec.: 0.667 
+
+2019-01-01 - 2020-01-01 00:00:00
+Real Clas. Model Acc.: 0.596
+Real Clas. Model Bal. Acc.: 0.58
+Real Clas. Model Roc-Auc: 0.58
+Real Clas. Model Prec.: 0.6 
+
+2020-01-01 - 2020-12-31 00:00:00
+Real Clas. Model Acc.: 0.596
+Real Clas. Model Bal. Acc.: 0.616
+Real Clas. Model Roc-Auc: 0.616
+Real Clas. Model Prec.: 0.483 
+
+2021-01-01 - 2022-01-01 00:00:00
+Real Clas. Model Acc.: 0.396
+Real Clas. Model Bal. Acc.: 0.397
+Real Clas. Model Roc-Auc: 0.397
+Real Clas. Model Prec.: 0.52 
+
+2022-01-01 - 2023-01-01 00:00:00
+Real Clas. Model Acc.: 0.731
+Real Clas. Model Bal. Acc.: 0.724
+Real Clas. Model Roc-Auc: 0.724
+Real Clas. Model Prec.: 0.767 
+
+2023-01-01 - 2024-01-01 00:00:00
+Real Clas. Model Acc.: 0.609
+Real Clas. Model Bal. Acc.: 0.594
+Real Clas. Model Roc-Auc: 0.594
+Real Clas. Model Prec.: 0.6 
+
+Permutation Feature Importance:
+                        Feature    Importance
+23         HML_DIFF_1_ROLLING_4  8.115942e-02
+10                   SMB_DIFF_1  7.101449e-02
+0               Large Cap Value  5.797101e-02
+7        Small Cap Value_DIFF_1  5.362319e-02
+18  Small Cap Growth_ROLLING_12  5.072464e-02
+6       Large Cap Growth_DIFF_1  4.927536e-02
+15    Small Cap Value_ROLLING_4  4.782609e-02
+5        Large Cap Value_DIFF_1  4.637681e-02
+4                           SMB  4.637681e-02
+19                HML_ROLLING_4  4.492754e-02
+13   Large Cap Growth_ROLLING_4  3.768116e-02
+2               Small Cap Value  3.333333e-02
+11    Large Cap Value_ROLLING_4  3.188406e-02
+1              Large Cap Growth  2.898551e-02
+26                        MONTH  1.884058e-02
+22               SMB_ROLLING_12  1.884058e-02
+20               HML_ROLLING_12  1.739130e-02
+17   Small Cap Growth_ROLLING_4  1.594203e-02
+3              Small Cap Growth  1.594203e-02
+25                      HML_RSI  1.594203e-02
+16   Small Cap Value_ROLLING_12  1.159420e-02
+14  Large Cap Growth_ROLLING_12  1.014493e-02
+21                SMB_ROLLING_4  8.695652e-03
+12   Large Cap Value_ROLLING_12  7.401487e-18
+8       Small Cap Growth_DIFF_1 -1.594203e-02
+9                    HML_DIFF_1 -1.884058e-02
+24        HML_DIFF_1_ROLLING_12 -2.753623e-02
+
+
+FULL PERIOD
+Dummy Clas. Model Acc.: 0.498
+Dummy Clas. Model Bal. Acc.: 0.495
+Dummy Clas. Model Roc-Auc: 0.495
+Dummy Clas. Model Prec.: 0.471 
+
+FULL PERIOD
+Real Clas. Model Acc.: 0.581
+Real Clas. Model Bal. Acc.: 0.577
+Real Clas. Model Roc-Auc: 0.577
+Real Clas. Model Prec.: 0.571 
+
+Num test observations total: 516 
+
+Num observations with probability > 55%: 129
+Accuracy for predictions with probability > 55%: 0.5891 
+
+Num observations with probability > 60%: 69
+Accuracy for predictions with probability > 60%: 0.5942 
+
+Num observations with probability > 65%: 27
+Accuracy for predictions with probability > 65%: 0.5556 
+
