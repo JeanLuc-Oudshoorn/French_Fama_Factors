@@ -334,6 +334,11 @@ for num, val in zip([0.55, 0.6, 0.65], ['55', '60', '65']):
     print(f'Num observations with probability > {val}%: {len(high_prob_rows)}')
     print(f'Accuracy for predictions with probability > {val}%: {accuracy_high_prob:.4f}', '\n')
 
+for num, val in zip([0.45, 0.4, 0.35], ['45', '40', '35']):
+    low_prob_rows = indices_full[indices_full['REAL_PRED_PROBA_CLS'] < num]
+    accuracy_low_prob = accuracy_score(low_prob_rows['HML_1_INDICATOR'], low_prob_rows['REAL_PRED_CLS'])
+    print(f'Num observations with probability < {val}%: {len(low_prob_rows)}')
+    print(f'Accuracy for predictions with probability > {val}%: {accuracy_low_prob:.4f}', '\n')
 
 # Save results for further analysis
 indices_full.to_csv("HML_weekly_results.csv")

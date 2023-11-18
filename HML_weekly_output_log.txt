@@ -1,62 +1,62 @@
 2014-01-01 - 2015-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.615
-Dummy Clas. Model Bal. Acc.: 0.604
-Dummy Clas. Model Roc-Auc: 0.604
-Dummy Clas. Model Prec.: 0.611 
+Dummy Clas. Model Acc.: 0.462
+Dummy Clas. Model Bal. Acc.: 0.464
+Dummy Clas. Model Roc-Auc: 0.464
+Dummy Clas. Model Prec.: 0.429 
 
 2015-01-01 - 2016-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.377
-Dummy Clas. Model Bal. Acc.: 0.372
-Dummy Clas. Model Roc-Auc: 0.372
-Dummy Clas. Model Prec.: 0.259 
+Dummy Clas. Model Acc.: 0.698
+Dummy Clas. Model Bal. Acc.: 0.698
+Dummy Clas. Model Roc-Auc: 0.698
+Dummy Clas. Model Prec.: 0.583 
 
 2016-01-01 - 2016-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.585
-Dummy Clas. Model Bal. Acc.: 0.599
-Dummy Clas. Model Roc-Auc: 0.599
-Dummy Clas. Model Prec.: 0.696 
+Dummy Clas. Model Acc.: 0.528
+Dummy Clas. Model Bal. Acc.: 0.537
+Dummy Clas. Model Roc-Auc: 0.537
+Dummy Clas. Model Prec.: 0.625 
 
 2017-01-01 - 2018-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.558
-Dummy Clas. Model Bal. Acc.: 0.566
-Dummy Clas. Model Roc-Auc: 0.566
-Dummy Clas. Model Prec.: 0.385 
+Dummy Clas. Model Acc.: 0.481
+Dummy Clas. Model Bal. Acc.: 0.493
+Dummy Clas. Model Roc-Auc: 0.493
+Dummy Clas. Model Prec.: 0.321 
 
 2018-01-01 - 2019-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.519
-Dummy Clas. Model Bal. Acc.: 0.521
-Dummy Clas. Model Roc-Auc: 0.521
-Dummy Clas. Model Prec.: 0.542 
+Dummy Clas. Model Acc.: 0.481
+Dummy Clas. Model Bal. Acc.: 0.481
+Dummy Clas. Model Roc-Auc: 0.481
+Dummy Clas. Model Prec.: 0.5 
 
 2019-01-01 - 2020-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.423
-Dummy Clas. Model Bal. Acc.: 0.423
-Dummy Clas. Model Roc-Auc: 0.423
-Dummy Clas. Model Prec.: 0.385 
+Dummy Clas. Model Acc.: 0.5
+Dummy Clas. Model Bal. Acc.: 0.494
+Dummy Clas. Model Roc-Auc: 0.494
+Dummy Clas. Model Prec.: 0.455 
 
 2020-01-01 - 2020-12-31 00:00:00
-Dummy Clas. Model Acc.: 0.442
-Dummy Clas. Model Bal. Acc.: 0.444
-Dummy Clas. Model Roc-Auc: 0.444
-Dummy Clas. Model Prec.: 0.333 
+Dummy Clas. Model Acc.: 0.5
+Dummy Clas. Model Bal. Acc.: 0.509
+Dummy Clas. Model Roc-Auc: 0.509
+Dummy Clas. Model Prec.: 0.393 
 
 2021-01-01 - 2022-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.509
-Dummy Clas. Model Bal. Acc.: 0.527
-Dummy Clas. Model Roc-Auc: 0.527
-Dummy Clas. Model Prec.: 0.652 
+Dummy Clas. Model Acc.: 0.453
+Dummy Clas. Model Bal. Acc.: 0.482
+Dummy Clas. Model Roc-Auc: 0.482
+Dummy Clas. Model Prec.: 0.6 
 
 2022-01-01 - 2023-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.462
-Dummy Clas. Model Bal. Acc.: 0.473
-Dummy Clas. Model Roc-Auc: 0.473
-Dummy Clas. Model Prec.: 0.545 
+Dummy Clas. Model Acc.: 0.558
+Dummy Clas. Model Bal. Acc.: 0.58
+Dummy Clas. Model Roc-Auc: 0.58
+Dummy Clas. Model Prec.: 0.684 
 
 2023-01-01 - 2024-01-01 00:00:00
-Dummy Clas. Model Acc.: 0.5
-Dummy Clas. Model Bal. Acc.: 0.479
-Dummy Clas. Model Roc-Auc: 0.479
-Dummy Clas. Model Prec.: 0.417 
+Dummy Clas. Model Acc.: 0.587
+Dummy Clas. Model Bal. Acc.: 0.582
+Dummy Clas. Model Roc-Auc: 0.582
+Dummy Clas. Model Prec.: 0.55 
 
 
 
@@ -152,10 +152,10 @@ Permutation Feature Importance:
 
 
 FULL PERIOD
-Dummy Clas. Model Acc.: 0.498
-Dummy Clas. Model Bal. Acc.: 0.495
-Dummy Clas. Model Roc-Auc: 0.495
-Dummy Clas. Model Prec.: 0.471 
+Dummy Clas. Model Acc.: 0.525
+Dummy Clas. Model Bal. Acc.: 0.524
+Dummy Clas. Model Roc-Auc: 0.524
+Dummy Clas. Model Prec.: 0.502 
 
 FULL PERIOD
 Real Clas. Model Acc.: 0.581
@@ -173,4 +173,13 @@ Accuracy for predictions with probability > 60%: 0.5942
 
 Num observations with probability > 65%: 27
 Accuracy for predictions with probability > 65%: 0.5556 
+
+Num observations with probability < 45%: 196
+Accuracy for predictions with probability > 45%: 0.5816 
+
+Num observations with probability < 40%: 110
+Accuracy for predictions with probability > 40%: 0.5818 
+
+Num observations with probability < 35%: 55
+Accuracy for predictions with probability > 35%: 0.5455 
 
