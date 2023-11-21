@@ -9,7 +9,10 @@ from sklearn.inspection import permutation_importance
 import warnings
 import sys
 from datetime import datetime
-import math
+import warnings
+
+# Silence warnings
+warnings.filterwarnings('ignore')
 
 # Ability to print longer dataframes for feature importance
 pd.set_option('display.max_rows', 150)
@@ -39,8 +42,9 @@ indices.columns = ['DATE', 'Large Cap Value', 'Large Cap Growth', 'Small Cap Val
 # Drop uninformative columns
 indices.drop(columns=['Nasdaq', 'SP500'], inplace=True)
 
-for data in ['inflation_expectation.csv']: # 'inflation_expectation.csv', 'volatility_index.csv'
+# 'inflation_expectation.csv', 'volatility_index.csv', 'real_interest_rate.csv'
 
+for data in ['real_interest_rate.csv']:
     data_dict[data] = pd.read_csv(data)
 
 # Resample all columns to weekly frequency, using the mean
@@ -65,24 +69,24 @@ curve.set_index('DATE', inplace=True)
 yield_curve = pd.to_numeric(curve['T10Y2Y'], errors='coerce').resample('W-Fri').mean().reset_index()
 
 # ======================================== MERGING DATA ===========================================
-# indices = indices.merge(yield_curve, how='outer', on='DATE')#\
-#                  .merge(weekly_10_year, how='outer', on='DATE')
+# indices = indices.merge(weekly_10_year, how='outer', on='DATE')#\
+#                  .merge(yield_curve, how='outer', on='DATE')
 
 # Extract and create date column
-# for key in data_dict.keys():
-#     data = data_dict[key]
-#     data['DATE'] = pd.to_datetime(data['DATE'])
-#
-#     # Forward fill in case of missing values
-#     if 'UMCSENT' in data.columns:
-#         data['UMCSENT'] = pd.to_numeric(data['UMCSENT'], errors='coerce')
-#
-#     # Set index and resample
-#     data.set_index('DATE', inplace=True)
-#     resampled = data.resample('W-Fri').first().reset_index()
-#
-#     # Perform merge
-#     indices = indices.merge(resampled, how='outer', on='DATE')
+for key in data_dict.keys():
+    data = data_dict[key]
+    data['DATE'] = pd.to_datetime(data['DATE'])
+
+    # Forward fill in case of missing values
+    if 'UMCSENT' in data.columns:
+        data['UMCSENT'] = pd.to_numeric(data['UMCSENT'], errors='coerce')
+
+    # Set index and resample
+    data.set_index('DATE', inplace=True)
+    resampled = data.resample('W-Fri').first().reset_index()
+
+    # Perform merge
+    indices = indices.merge(resampled, how='outer', on='DATE')
 
 # Read investor sentiment
 # inv_sentiment = pd.read_excel('retail_investor_sentiment.xls').iloc[2:, :4]
@@ -123,16 +127,16 @@ indices.loc['2023-11-17', 'HML_1'] = 1
 # indices.drop(columns=['Large Cap Value', 'Large Cap Growth', 'Small Cap Value', 'Small Cap Growth'], inplace=True)
 
 # Create list of predictors
-all_predictors = [var for var in indices.columns if var not in ['HML_1']]
+all_predictors = [var for var in indices.columns if var not in ['HML_1', 'REAINTRATREARAT1YE']]
 
 # Create differences
-for var in all_predictors:
+for var in all_predictors + ['REAINTRATREARAT1YE']:
     for timespan in [1]:
         indices[f'{var}_DIFF_{timespan}'] = indices[var].diff(timespan)
 
 # Create rolling averages and as extra features
-for var in all_predictors + ['HML_DIFF_1']:
-    for timespan in [4, 12]:
+for var in all_predictors + ['HML_DIFF_1', 'REAINTRATREARAT1YE_DIFF_1']:
+    for timespan in [3, 12, 24]:
         indices[f'{var}_ROLLING_{timespan}'] = indices[var].rolling(timespan).mean()
 
 # Create dummy features for benchmarking
@@ -145,8 +149,11 @@ indices['HML_RSI'] = ta.rsi(indices['HML'], window=14)
 # Create indicator outcome for classification
 indices['HML_1_INDICATOR'] = np.where(indices['HML_1'] >= 0, 1, 0)
 
-# Create a feature for month
-indices['MONTH'] = indices.index.month
+# Define MA Cross
+# indices['MA_CROSS'] = np.where(indices['HML_ROLLING_4'] > indices['HML_ROLLING_12'], 1, 0)
+
+# Create a feature for WOY
+indices['WOY'] = indices.index.weekofyear
 
 # Drop missing values
 indices.dropna(inplace=True)
@@ -168,13 +175,13 @@ for year in range(start_year, end_year + 1):
 res_dict = {}
 
 # Define dummy variables
-dummy_vars = [var for var in indices.columns if 'DUMMY' in var] + ['MONTH']
+dummy_vars = [var for var in indices.columns if 'DUMMY' in var] + ['WOY']
 
 for i, timesplit in enumerate(date_list):
     # Initialize basic model
     rf_dummy = RandomForestClassifier(random_state=42,
                                       n_jobs=-1,
-                                      max_features=0.2)
+                                      max_features=0.4)
 
     # Timesplit train- and test data
     train = indices_full[indices_full.index < timesplit]
@@ -230,8 +237,7 @@ for i, timesplit in enumerate(date_list):
     # Initialize basic model
     rf = RandomForestClassifier(random_state=42,
                                 n_jobs=-1,
-                                max_features=.2)
-
+                                max_features=.4)
 
     # Timesplit train- and test data
     train = indices_full[indices_full.index < timesplit]
@@ -275,7 +281,7 @@ for i, timesplit in enumerate(date_list):
 
     if timesplit == '2023-01-01':
         # Calculate permutation feature importance
-        perm_importance = permutation_importance(rf, X_test, y_test, n_repeats=15, random_state=42)
+        perm_importance = permutation_importance(rf, X_test, y_test, n_repeats=30, random_state=42)
 
         # Display the results
         perm_importance_df = pd.DataFrame({'Feature': X_test.columns, 'Importance': perm_importance.importances_mean})
@@ -311,7 +317,7 @@ y_pred = indices_full[indices_full.index >= '2014-01-01']['REAL_PRED_CLS']
 # Create rolling accuracy of predictions
 indices_full.loc['2014-01-01':, 'REAL_CORRECT'] = (y_test == y_pred)
 indices_full['REAL_EXPANDING_ACC'] = indices_full['REAL_CORRECT'].expanding().mean()
-indices_full['REAL_ROLLING_24_ACC'] = indices_full['REAL_CORRECT'].rolling(24).mean()
+indices_full['REAL_ROLLING_52_ACC'] = indices_full['REAL_CORRECT'].rolling(52).mean()
 
 acc = accuracy_score(y_test, y_pred)
 bal_acc = balanced_accuracy_score(y_test, y_pred)
@@ -339,6 +345,8 @@ for num, val in zip([0.45, 0.4, 0.35], ['45', '40', '35']):
     accuracy_low_prob = accuracy_score(low_prob_rows['HML_1_INDICATOR'], low_prob_rows['REAL_PRED_CLS'])
     print(f'Num observations with probability < {val}%: {len(low_prob_rows)}')
     print(f'Accuracy for predictions with probability > {val}%: {accuracy_low_prob:.4f}', '\n')
+
+print(f"One-week forward predicted class probability: {indices_full['REAL_PRED_PROBA_CLS'].iloc[-1]}")
 
 # Save results for further analysis
 indices_full.to_csv("HML_weekly_results.csv")
