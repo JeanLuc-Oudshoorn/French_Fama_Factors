@@ -1,0 +1,108 @@
+Permutation Feature Importance:
+                                 Feature  Importance
+15            Large Cap Growth_ROLLING_4    0.061594
+0                        Large Cap Value    0.060145
+30                                   WOY    0.047826
+25   REAL_INTEREST_RATE_DIFF_1_ROLLING_4    0.042754
+27          OUTCOME_VAR_DIFF_1_ROLLING_4    0.042754
+11                            SMB_DIFF_1    0.036232
+29                                   RSI    0.034783
+20           Small Cap Growth_ROLLING_12    0.027536
+14            Large Cap Value_ROLLING_12    0.023188
+3                       Small Cap Growth    0.018841
+22                OUTCOME_VAR_ROLLING_12    0.018841
+13             Large Cap Value_ROLLING_4    0.017391
+1                       Large Cap Growth    0.017391
+18            Small Cap Value_ROLLING_12    0.016667
+4                     REAL_INTEREST_RATE    0.009420
+17             Small Cap Value_ROLLING_4   -0.001449
+6                 Large Cap Value_DIFF_1   -0.002174
+12             REAL_INTEREST_RATE_DIFF_1   -0.003623
+19            Small Cap Growth_ROLLING_4   -0.007246
+9                Small Cap Growth_DIFF_1   -0.010145
+8                 Small Cap Value_DIFF_1   -0.011594
+5                                    SMB   -0.013043
+26  REAL_INTEREST_RATE_DIFF_1_ROLLING_12   -0.021739
+16           Large Cap Growth_ROLLING_12   -0.024638
+2                        Small Cap Value   -0.034058
+23                         SMB_ROLLING_4   -0.035507
+7                Large Cap Growth_DIFF_1   -0.035507
+10                    OUTCOME_VAR_DIFF_1   -0.036232
+21                 OUTCOME_VAR_ROLLING_4   -0.036957
+24                        SMB_ROLLING_12   -0.040580
+28         OUTCOME_VAR_DIFF_1_ROLLING_12   -0.057971 
+
+FULL PERIOD:
+Real Clas. Model Acc.: 0.558
+Real Clas. Model Bal. Acc.: 0.555
+Real Clas. Model Roc-Auc: 0.555
+Real Clas. Model Prec.: 0.541 
+
+PERIOD 2014-01-01 - 2015-01-01:
+Real Clas. Model Bal. Acc.: 0.607 
+
+PERIOD 2015-01-01 - 2016-01-01:
+Real Clas. Model Bal. Acc.: 0.503 
+
+PERIOD 2016-01-01 - 2017-01-01:
+Real Clas. Model Bal. Acc.: 0.501 
+
+PERIOD 2017-01-01 - 2018-01-01:
+Real Clas. Model Bal. Acc.: 0.532 
+
+PERIOD 2018-01-01 - 2019-01-01:
+Real Clas. Model Bal. Acc.: 0.564 
+
+PERIOD 2019-01-01 - 2020-01-01:
+Real Clas. Model Bal. Acc.: 0.586 
+
+PERIOD 2020-01-01 - 2021-01-01:
+Real Clas. Model Bal. Acc.: 0.509 
+
+PERIOD 2021-01-01 - 2022-01-01:
+Real Clas. Model Bal. Acc.: 0.392 
+
+PERIOD 2022-01-01 - 2023-01-01:
+Real Clas. Model Bal. Acc.: 0.555 
+
+PERIOD 2023-01-01 - 2024-01-01:
+Real Clas. Model Bal. Acc.: 0.586 
+
+Num observations with probability >= 53%: 153
+Accuracy for predictions with probability >= 53%: 0.5948 
+
+Num observations with probability >= 55%: 120
+Accuracy for predictions with probability >= 55%: 0.6000 
+
+Num observations with probability >= 57%: 90
+Accuracy for predictions with probability >= 57%: 0.6000 
+
+Num observations with probability >= 59%: 64
+Accuracy for predictions with probability >= 59%: 0.6094 
+
+Num observations with probability >= 61%: 46
+Accuracy for predictions with probability >= 61%: 0.5870 
+
+Num observations with probability >= 63%: 28
+Accuracy for predictions with probability >= 63%: 0.6071 
+
+Num observations with probability <= 47%: 234
+Accuracy for predictions with probability <= 47%: 0.5641 
+
+Num observations with probability <= 45%: 184
+Accuracy for predictions with probability <= 45%: 0.5652 
+
+Num observations with probability <= 43%: 149
+Accuracy for predictions with probability <= 43%: 0.5839 
+
+Num observations with probability <= 41%: 112
+Accuracy for predictions with probability <= 41%: 0.6071 
+
+Num observations with probability <= 39%: 92
+Accuracy for predictions with probability <= 39%: 0.6087 
+
+Num observations with probability <= 37%: 59
+Accuracy for predictions with probability <= 37%: 0.6610 
+
+Mean One-week forward probability: 0.534 
+

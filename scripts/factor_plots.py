@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 
 # Load in the data
-five_factors = pd.read_csv('F-F_Research_Data_Factors_daily.csv')
+five_factors = pd.read_csv('../F-F_Research_Data_Factors_daily.CSV')
 
 # Convert the date to the correct format
 five_factors['date'] = pd.to_datetime(five_factors['Unnamed: 0'], format='%Y%m%d')
