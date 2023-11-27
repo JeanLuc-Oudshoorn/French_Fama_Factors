@@ -120,6 +120,8 @@ class WeeklyFinancialForecastingModel:
                 pass  # no change needed, data is already on Thursday
             elif self.resampling_day == 'W-Fri':
                 inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(1, unit='d')
+            elif self.resampling_day == 'W-Sat':
+                inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(2, unit='d')
 
             # Merge investor sentiment to indices
             self.data = self.data.merge(inv_sentiment, how='outer', on=self.date_name)
@@ -231,7 +233,7 @@ class WeeklyFinancialForecastingModel:
         return self.data
 
     def build_model(self, start_year: int = 2014, end_year: int = 2023, n_estimators: int = 100,
-                    max_features: float = .4):
+                    max_features: float = .4, save=False):
         # Define retraining intervals
         date_list = []
 
@@ -280,21 +282,23 @@ class WeeklyFinancialForecastingModel:
                     y_pred_proba[:, 1]
 
                 # Calculate feature importance for last seed to evaluate
-                if timesplit == '2023-01-01' and seed == self.num_rounds - 1:
-                    # Calculate permutation feature importance
-                    perm_importance = permutation_importance(rf, X_test, y_test, n_repeats=30, random_state=seed)
+                if save:
+                    if timesplit == '2023-01-01' and seed == self.num_rounds - 1:
+                        # Calculate permutation feature importance
+                        perm_importance = permutation_importance(rf, X_test, y_test, n_repeats=30, random_state=seed)
 
-                    # Display the results
-                    perm_importance_df = pd.DataFrame(
-                        {'Feature': X_test.columns, 'Importance': perm_importance.importances_mean})
-                    perm_importance_df = perm_importance_df.sort_values(by='Importance', ascending=False)
+                        # Display the results
+                        perm_importance_df = pd.DataFrame(
+                            {'Feature': X_test.columns, 'Importance': perm_importance.importances_mean})
+                        perm_importance_df = perm_importance_df.sort_values(by='Importance', ascending=False)
 
-                    print("Permutation Feature Importance:")
-                    print(perm_importance_df, '\n')
+                        print("Permutation Feature Importance:")
+                        print(perm_importance_df, '\n')
 
         return self.data
 
-    def final_evaluation(self, bal_acc_list: list):
+    def final_evaluation(self, bal_acc_list: list, save=False, perform_sensitivity_test=False,
+                         expanding_mean=False, test_date_pairs=False):
 
         # Define the pattern
         pattern = r'REAL_PRED_PROBA_CLS_\d{1,2}'
@@ -311,9 +315,10 @@ class WeeklyFinancialForecastingModel:
         y_pred = self.data[self.data.index >= self.test_start_date]['MEAN_PRED_CLS']
 
         # Create rolling accuracy of predictions
-        self.data.loc[self.test_start_date:, 'REAL_CORRECT'] = (y_test == y_pred)
-        self.data['REAL_EXPANDING_ACC'] = self.data['REAL_CORRECT'].expanding().mean()
-        self.data['REAL_ROLLING_52_ACC'] = self.data['REAL_CORRECT'].rolling(52).mean()
+        if expanding_mean:
+            self.data.loc[self.test_start_date:, 'REAL_CORRECT'] = (y_test == y_pred)
+            self.data['REAL_EXPANDING_ACC'] = self.data['REAL_CORRECT'].expanding().mean()
+            self.data['REAL_ROLLING_52_ACC'] = self.data['REAL_CORRECT'].rolling(52).mean()
 
         acc = accuracy_score(y_test, y_pred)
         bal_acc = balanced_accuracy_score(y_test, y_pred)
@@ -327,31 +332,33 @@ class WeeklyFinancialForecastingModel:
         print("Real Clas. Model Roc-Auc:", round(roc, 3))
         print("Real Clas. Model Prec.:", round(prec, 3), '\n')
 
-        # Create a list of one-year intervals
-        date_list = pd.date_range(start=self.test_start_date,
-                                  end=(pd.to_datetime('today') + pd.DateOffset(years=1)).strftime('%Y-%m-%d'),
-                                  freq='YS').strftime('%Y-%m-%d').tolist()
+        if test_date_pairs:
+            # Create a list of one-year intervals
+            date_list = pd.date_range(start=self.test_start_date,
+                                      end=(pd.to_datetime('today') + pd.DateOffset(years=1)).strftime('%Y-%m-%d'),
+                                      freq='YS').strftime('%Y-%m-%d').tolist()
 
-        # Initialize an empty list to store the date pairs
-        date_pairs = []
 
-        # Loop over the range of the length of date_list - 1
-        for i in range(len(date_list) - 1):
-            # Create a list with the start date and the date exactly one year later
-            date_pair = [date_list[i], date_list[i + 1]]
-            # Append the date pair to the date_pairs list
-            date_pairs.append(date_pair)
+            # Initialize an empty list to store the date pairs
+            date_pairs = []
 
-        for pair in date_pairs:
-            # Evaluate one-year ahead predictions
-            y_test = self.data[(self.data.index >= pair[0]) & (self.data.index < pair[1])]['OUTCOME_VAR_1_INDICATOR']
-            y_pred = self.data[(self.data.index >= pair[0]) & (self.data.index < pair[1])]['MEAN_PRED_CLS']
+            # Loop over the range of the length of date_list - 1
+            for i in range(len(date_list) - 1):
+                # Create a list with the start date and the date exactly one year later
+                date_pair = [date_list[i], date_list[i + 1]]
+                # Append the date pair to the date_pairs list
+                date_pairs.append(date_pair)
 
-            bal_acc = balanced_accuracy_score(y_test, y_pred)
+            for pair in date_pairs:
+                # Evaluate one-year ahead predictions
+                y_test = self.data[(self.data.index >= pair[0]) & (self.data.index < pair[1])]['OUTCOME_VAR_1_INDICATOR']
+                y_pred = self.data[(self.data.index >= pair[0]) & (self.data.index < pair[1])]['MEAN_PRED_CLS']
 
-            # Print results
-            print(f"PERIOD {pair[0]} - {pair[1]}:")
-            print("Real Clas. Model Bal. Acc.:", round(bal_acc, 3), '\n')
+                bal_acc = balanced_accuracy_score(y_test, y_pred)
+
+                # Print results
+                print(f"PERIOD {pair[0]} - {pair[1]}:")
+                print("Real Clas. Model Bal. Acc.:", round(bal_acc, 3), '\n')
 
         def sensitivity_test(nums: list, vals: list, higher: bool):
             for num, val in zip(nums, vals):
@@ -368,8 +375,9 @@ class WeeklyFinancialForecastingModel:
                 print(f'Num observations with probability {sign} {val}%: {len(prob_rows)}')
                 print(f'Accuracy for predictions with probability {sign} {val}%: {accuracy_prob:.4f}', '\n')
 
-        sensitivity_test([0.53, 0.55, 0.57, 0.59, 0.61], ['53', '55', '57', '59', '61'], True)
-        sensitivity_test([0.47, 0.45, 0.43, 0.41, 0.39], ['47', '45', '43', '41', '39'], False)
+        if perform_sensitivity_test:
+            sensitivity_test([0.53, 0.55, 0.57, 0.59, 0.61], ['53', '55', '57', '59', '61'], True)
+            sensitivity_test([0.47, 0.45, 0.43, 0.41, 0.39], ['47', '45', '43', '41', '39'], False)
 
         print("Mean One-week forward probability:",
               round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
@@ -385,7 +393,8 @@ class WeeklyFinancialForecastingModel:
             bal_acc_list.append(bal_acc)
 
         # Save results for further analysis
-        self.data.to_csv(self.output_path)
+        if save:
+            self.data.to_csv(self.output_path)
 
     def close_log(self):
         # Close the log file
@@ -405,7 +414,7 @@ class WeeklyFinancialForecastingModel:
 
         return bal_acc
 
-    def run_model_with_configs(self, feature_configs: list):
+    def run_model_with_configs(self, feature_configs: list, early_stopping: bool = True):
 
         # Initialize a dictionary to store the results
         results = {}
@@ -417,8 +426,18 @@ class WeeklyFinancialForecastingModel:
             # Initialize a list with balanced accuracy values
             bal_acc_list = []
 
-            for resampling_day in ['W-Mon', 'W-Tue', 'W-Wed', 'W-Thu', 'W-Fri']:
+            for resampling_day in ['W-Mon', 'W-Tue', 'W-Wed', 'W-Thu', 'W-Fri', 'W-Sat']:
                 print("Resampling day:", resampling_day)
+
+                # Exit config if accuracy is too low
+                if early_stopping:
+                    if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.495) or \
+                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.505):
+
+                        print("Exit config due to low accuracy!")
+                        results[str(i)] = bal_acc_list
+                        break
+
                 # change resampling day
                 self.resampling_day = resampling_day
                 self.read_data()
@@ -438,12 +457,13 @@ class WeeklyFinancialForecastingModel:
                 self.create_features(extra_features_list=config['extra_features_list'],
                                      features_no_ma=[var.replace('.csv', '').upper() for var in self.fred_series],
                                      ma_timespans=config['ma_timespans'])
-                self.build_model(start_year=2014, end_year=2023)
+                self.build_model(start_year=2014, end_year=2023, n_estimators=config['n_estimators'],
+                                 max_features=config['max_features'], save=False)
                 self.final_evaluation(bal_acc_list=bal_acc_list)
                 self.close_log()
                 self.print_balanced_accuracy()
 
-                # Store the bal_acc_list in the results dictionary
-                results[str(i)] = bal_acc_list
+            # Store the bal_acc_list in the results dictionary
+            results[str(i)] = bal_acc_list
 
         return results
