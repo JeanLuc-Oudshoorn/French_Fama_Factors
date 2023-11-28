@@ -70,7 +70,7 @@ for factor in ['HML', 'SMB', 'Mkt-RF']:
     plt.title(f'Expanding Sum of {factor} Factor Returns per Decade')
 
     # Show the plot
-    plt.savefig(f'{factor}_expanding_sum_decades.png')
+    plt.savefig(f'../figures/{factor}_expanding_sum_decades.png')
     plt.show()
 
     # Print factor premium per decade
