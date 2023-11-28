@@ -95,6 +95,9 @@ class WeeklyFinancialForecastingModel:
                 data_resampled = pd.to_numeric(data_loaded.iloc[:, 0], errors='coerce').resample(self.resampling_day)\
                     .mean().reset_index()
 
+                # Rename columns
+                data_resampled.columns = [self.date_name, cont_data.replace('.csv', '').upper()]
+
                 # Merge with main dataframe
                 self.data = self.data.merge(data_resampled, how='outer', on=self.date_name)
 
@@ -157,9 +160,11 @@ class WeeklyFinancialForecastingModel:
         return self.data
 
     def create_features(self, extra_features_list: list, features_no_ma: list, ma_timespans: list,
-                        rsi_window=14, apo_fast=12, apo_slow=26, cg_length=10, stdev_length=30):
+                        momentum_diff_list: list, rsi_window=14, apo_fast=12, apo_slow=26,
+                        cg_length=10, stdev_length=30):
 
-        if 'SMB' in extra_features_list:
+        if 'SMB' in extra_features_list and all(item in self.data.columns for item in
+                                                ['Large Cap Value', 'Large Cap Growth']):
             # Create proxy small minus big
             self.data['SMB'] = (self.data['Small Cap Value'] + self.data['Small Cap Growth']) - \
                                (self.data['Large Cap Value'] + self.data['Large Cap Growth'])
@@ -217,6 +222,10 @@ class WeeklyFinancialForecastingModel:
             self.data['MA_CROSS'] = np.where(self.data['OUTCOME_VAR_ROLLING_' + str(ma_timespans[0])] >
                                              self.data['OUTCOME_VAR_ROLLING_' + str(ma_timespans[1])], 1, 0)
 
+        for var in ['APO', 'RSI', 'CG', 'STDEV', 'MA_CROSS']:
+            if var in momentum_diff_list:
+                self.data[f'{var}_DIFF_1'] = self.data[var].diff(1)
+
         if 'WOY' in extra_features_list:
             # Create week of year
             self.data['WOY'] = self.data.index.weekofyear
@@ -233,7 +242,7 @@ class WeeklyFinancialForecastingModel:
         return self.data
 
     def build_model(self, start_year: int = 2014, end_year: int = 2023, n_estimators: int = 100,
-                    max_features: float = .4, save=False):
+                    max_features: float = .4, exclude_base_outcome_var=False, save=False):
         # Define retraining intervals
         date_list = []
 
@@ -243,7 +252,10 @@ class WeeklyFinancialForecastingModel:
 
         # Define dummy variables
         pred_vars = [var for var in self.data.columns if var not in
-                     ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR']]  # + ['OUTCOME_VAR']
+                     ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR']]
+
+        if exclude_base_outcome_var:
+            pred_vars= pred_vars + ['OUTCOME_VAR']
 
         # Number of seeds to evaluate
         for seed in range(self.num_rounds):
@@ -455,10 +467,15 @@ class WeeklyFinancialForecastingModel:
                 self.fill_missing_values()
                 self.define_outcome_var(series_diff=True)
                 self.create_features(extra_features_list=config['extra_features_list'],
-                                     features_no_ma=[var.replace('.csv', '').upper() for var in self.fred_series],
+                                     features_no_ma=[var.replace('.csv', '').upper() for var in self.fred_series] +
+                                                    config['continuous_no_ma'],
+                                     momentum_diff_list=config['momentum_diff_list'],
                                      ma_timespans=config['ma_timespans'])
-                self.build_model(start_year=2014, end_year=2023, n_estimators=config['n_estimators'],
-                                 max_features=config['max_features'], save=False)
+                self.build_model(start_year=2014, end_year=2023,
+                                 n_estimators=config['n_estimators'],
+                                 max_features=config['max_features'],
+                                 exclude_base_outcome_var=config['exclude_base_outcome'],
+                                 save=False)
                 self.final_evaluation(bal_acc_list=bal_acc_list)
                 self.close_log()
                 self.print_balanced_accuracy()
