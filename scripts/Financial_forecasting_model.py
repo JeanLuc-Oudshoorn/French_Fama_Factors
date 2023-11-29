@@ -32,6 +32,7 @@ class WeeklyFinancialForecastingModel:
         self.test_start_date = test_start_date
         self.output_path = output_path
         self.log_file = None
+        self.intermediate_data = None
         self.read_data()
 
     def read_data(self):
@@ -242,7 +243,7 @@ class WeeklyFinancialForecastingModel:
         return self.data
 
     def build_model(self, start_year: int = 2014, end_year: int = 2023, n_estimators: int = 100,
-                    max_features: float = .4, exclude_base_outcome_var=False, save=False):
+                    max_features: float = .4, exclude_base_outcome_var=False, perm_feat=False, multiple_models=False):
         # Define retraining intervals
         date_list = []
 
@@ -294,7 +295,7 @@ class WeeklyFinancialForecastingModel:
                     y_pred_proba[:, 1]
 
                 # Calculate feature importance for last seed to evaluate
-                if save:
+                if perm_feat:
                     if timesplit == '2023-01-01' and seed == self.num_rounds - 1:
                         # Calculate permutation feature importance
                         perm_importance = permutation_importance(rf, X_test, y_test, n_repeats=30, random_state=seed)
@@ -307,16 +308,32 @@ class WeeklyFinancialForecastingModel:
                         print("Permutation Feature Importance:")
                         print(perm_importance_df, '\n')
 
+        if multiple_models:
+            # Define pattern for columns to keep
+            pattern = re.compile(r'REAL_PRED\w*')
+
+            # Use list comprehension to select the columns that match the pattern
+            selected_columns = [col for col in self.data.columns if re.match(pattern, col)]
+            self.intermediate_data = self.data[selected_columns]
+
         return self.data
 
     def final_evaluation(self, bal_acc_list: list, save=False, perform_sensitivity_test=False,
-                         expanding_mean=False, test_date_pairs=False):
+                         expanding_mean=False, test_date_pairs=False, multiple_models=False, bal_acc_switch=True):
+
+        if multiple_models:
+            self.data = pd.concat([self.intermediate_data, self.data], axis=1)
 
         # Define the pattern
         pattern = r'REAL_PRED_PROBA_CLS_\d{1,2}'
 
         # Use list comprehension to select the columns that match the pattern
         selected_columns = [col for col in self.data.columns if re.match(pattern, col)]
+
+        # Rename columns
+        evals = len(selected_columns)
+        self.data[selected_columns[:round(len(selected_columns)/2)]].columns = \
+            [f'REAL_PRED_PROBA_CLS_{num}' for num in range(evals)]
 
         # Calculate the mean predicted probability
         self.data['MEAN_PRED_PROBA'] = self.data[selected_columns].mean(axis=1)
@@ -394,15 +411,16 @@ class WeeklyFinancialForecastingModel:
         print("Mean One-week forward probability:",
               round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
 
-        for seed in range(self.num_rounds):
-            # Evaluate one-year ahead predictions
-            y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
-            y_pred = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_CLS_{seed}']
+        if bal_acc_switch:
+            for seed in range(self.num_rounds):
+                # Evaluate one-year ahead predictions
+                y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
+                y_pred = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_CLS_{seed}']
 
-            bal_acc = balanced_accuracy_score(y_test, y_pred)
+                bal_acc = balanced_accuracy_score(y_test, y_pred)
 
-            # Print results
-            bal_acc_list.append(bal_acc)
+                # Print results
+                bal_acc_list.append(bal_acc)
 
         # Save results for further analysis
         if save:
@@ -475,7 +493,9 @@ class WeeklyFinancialForecastingModel:
                                  n_estimators=config['n_estimators'],
                                  max_features=config['max_features'],
                                  exclude_base_outcome_var=config['exclude_base_outcome'],
-                                 save=False)
+                                 perm_feat=False,
+                                 multiple_models=True)
+
                 self.final_evaluation(bal_acc_list=bal_acc_list)
                 self.close_log()
                 self.print_balanced_accuracy()
@@ -484,3 +504,46 @@ class WeeklyFinancialForecastingModel:
             results[str(i)] = bal_acc_list
 
         return results
+
+    def build_model_ensemble(self, feature_configs):
+
+        for i, config in enumerate(feature_configs):
+            if i == 0:
+                mult_boolean = True
+            else:
+                mult_boolean = False
+
+            self.read_data()
+
+            self.fred_series = config['fred_series']
+            self.continuous_series = config['continuous_series']
+            self.columns_to_drop = config['columns_to_drop']
+
+            # Call the methods
+            self.create_log()
+            self.add_monthly_fred_data()
+            self.add_continuous_data()
+            self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
+                                             sent_cols_to_drop=config['sent_cols_to_drop'])
+            self.fill_missing_values()
+            self.define_outcome_var(series_diff=True)
+            self.create_features(extra_features_list=config['extra_features_list'],
+                                 features_no_ma=[var.replace('.csv', '').upper() for var in self.fred_series] +
+                                                 config['continuous_no_ma'],
+                                 momentum_diff_list=config['momentum_diff_list'],
+                                 ma_timespans=config['ma_timespans'])
+            self.build_model(start_year=2014, end_year=2023,
+                             n_estimators=config['n_estimators'],
+                             max_features=config['max_features'],
+                             exclude_base_outcome_var=config['exclude_base_outcome'],
+                             perm_feat=False, multiple_models=mult_boolean)
+
+        self.final_evaluation(save=True,
+                              perform_sensitivity_test=True,
+                              expanding_mean=True,
+                              test_date_pairs=True,
+                              multiple_models=True,
+                              bal_acc_switch=False,
+                              bal_acc_list=[])
+        self.close_log()
+        self.print_balanced_accuracy()
