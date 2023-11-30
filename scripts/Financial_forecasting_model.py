@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, roc_auc_score, precision_score, balanced_accuracy_score)
 from sklearn.inspection import permutation_importance
+import pandas_datareader.data as web
+import yfinance as yf
 import sys
 from datetime import datetime
 import warnings
@@ -14,12 +16,13 @@ warnings.filterwarnings('ignore')
 
 
 class WeeklyFinancialForecastingModel:
-    def __init__(self, log_path: str, returns_data: str, returns_data_date_column: str, resampling_day: str,
-                 date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list, fred_series: list,
-                 continuous_series: list, num_rounds: int, test_start_date: str, output_path: str):
+    def __init__(self, log_path: str, returns_data: str, stocks_list: list, returns_data_date_column: str,
+                 resampling_day: str, date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list,
+                 fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str, output_path: str):
 
         self.log_path = log_path
         self.returns_data = returns_data
+        self.stocks_list = stocks_list
         self.returns_data_date_column = returns_data_date_column
         self.resampling_day = resampling_day
         self.date_name = date_name
@@ -36,8 +39,19 @@ class WeeklyFinancialForecastingModel:
         self.read_data()
 
     def read_data(self):
-        # Read data and create date column
-        self.data = pd.read_csv(self.returns_data)
+
+        # Fetch the closing prices using the Tickers method
+        tickers_data = yf.Tickers(' '.join(self.stocks_list))
+
+        # Get historical data for closing prices
+        closing_prices = tickers_data.history(start=datetime(2000, 1, 1),
+                                              interval='1d')['Close'].dropna()
+
+        # Calculate log returns
+        self.data = (np.log(closing_prices / closing_prices.shift(1))).dropna()
+
+        # Convert date column to pandas datetime
+        self.data.reset_index(inplace=True)
         self.data[self.returns_data_date_column] = pd.to_datetime(self.data[self.returns_data_date_column])
 
         # Set column names
@@ -58,18 +72,20 @@ class WeeklyFinancialForecastingModel:
         self.log_file = open(self.log_path, "w")
         sys.stdout = self.log_file
 
-    def add_monthly_fred_data(self):
+    def add_monthly_fred_data(self, start_date='2000-01-01'):
 
         data_dict = {}
 
         for fred_data in self.fred_series:
-            data_dict[fred_data] = pd.read_csv(fred_data)
+            data_dict[fred_data] = web.DataReader(fred_data, 'fred', start_date)
+
+        self.data_dict = data_dict
 
         # Extract and create date column
         for key in data_dict.keys():
             fred_data = data_dict[key]
+            fred_data.reset_index(inplace=True)
             fred_data[self.date_name] = pd.to_datetime(fred_data[self.date_name])
-            fred_data.columns = [self.date_name, key.replace('.csv', '').upper()]
 
             # Forward fill in case of missing values
             if 'CONSUMER_SENTIMENT' in fred_data.columns:
@@ -229,7 +245,8 @@ class WeeklyFinancialForecastingModel:
 
         if 'WOY' in extra_features_list:
             # Create week of year
-            self.data['WOY'] = self.data.index.weekofyear
+            self.data['WOY'] = self.data.index.isocalendar().week
+
         elif 'MONTH' in extra_features_list:
             # Create month
             self.data['MONTH'] = self.data.index.month
@@ -528,8 +545,7 @@ class WeeklyFinancialForecastingModel:
             self.fill_missing_values()
             self.define_outcome_var(series_diff=True)
             self.create_features(extra_features_list=config['extra_features_list'],
-                                 features_no_ma=[var.replace('.csv', '').upper() for var in self.fred_series] +
-                                                 config['continuous_no_ma'],
+                                 features_no_ma=self.fred_series + config['continuous_no_ma'],
                                  momentum_diff_list=config['momentum_diff_list'],
                                  ma_timespans=config['ma_timespans'])
             self.build_model(start_year=2014, end_year=2023,
