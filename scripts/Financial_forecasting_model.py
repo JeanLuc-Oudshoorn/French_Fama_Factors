@@ -16,12 +16,12 @@ warnings.filterwarnings('ignore')
 
 
 class WeeklyFinancialForecastingModel:
-    def __init__(self, log_path: str, returns_data: str, stocks_list: list, returns_data_date_column: str,
+    def __init__(self, log_path: str, stocks_list: list, returns_data_date_column: str,
                  resampling_day: str, date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list,
-                 fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str, output_path: str):
+                 series_diff: int, fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str,
+                 output_path: str):
 
         self.log_path = log_path
-        self.returns_data = returns_data
         self.stocks_list = stocks_list
         self.returns_data_date_column = returns_data_date_column
         self.resampling_day = resampling_day
@@ -29,6 +29,7 @@ class WeeklyFinancialForecastingModel:
         self.col_names = col_names
         self.columns_to_drop = columns_to_drop
         self.outcome_vars = outcome_vars
+        self.series_diff = series_diff
         self.fred_series = fred_series
         self.continuous_series = continuous_series
         self.num_rounds = num_rounds
@@ -36,34 +37,41 @@ class WeeklyFinancialForecastingModel:
         self.output_path = output_path
         self.log_file = None
         self.intermediate_data = None
+        self.cache = None
         self.read_data()
 
     def read_data(self):
 
-        # Fetch the closing prices using the Tickers method
-        tickers_data = yf.Tickers(' '.join(self.stocks_list))
+        if self.cache is None:
+            # Fetch the closing prices using the Tickers method
+            tickers_data = yf.Tickers(' '.join(self.stocks_list))
 
-        # Get historical data for closing prices
-        closing_prices = tickers_data.history(start=datetime(2000, 1, 1),
-                                              interval='1d')['Close'].dropna()
+            # Get historical data for closing prices
+            closing_prices = tickers_data.history(start=datetime(2000, 8, 1),
+                                                  interval='1d')['Close'].dropna()
 
-        # Calculate log returns
-        self.data = (np.log(closing_prices / closing_prices.shift(1))).dropna()
+            # Calculate log returns
+            self.data = (np.log(closing_prices / closing_prices.shift(1))).dropna()
 
-        # Convert date column to pandas datetime
-        self.data.reset_index(inplace=True)
-        self.data[self.returns_data_date_column] = pd.to_datetime(self.data[self.returns_data_date_column])
+            # Convert date column to pandas datetime
+            self.data.reset_index(inplace=True)
+            self.data[self.returns_data_date_column] = pd.to_datetime(self.data[self.returns_data_date_column])
 
-        # Set column names
-        self.data.columns = self.col_names
+            # Set column names
+            self.data.columns = self.col_names
 
-        # Dropping selected columns
-        self.data.drop(columns=self.columns_to_drop, inplace=True)
+            # Build a cache of the data
+            self.cache = self.data.copy()
+        else:
+            self.data = self.cache.copy()
 
         # Resample all columns to weekly frequency, using the mean
         self.data.set_index(self.date_name, inplace=True)
         self.data = self.data.apply(lambda x: x.resample(self.resampling_day).mean())
         self.data.reset_index(inplace=True)
+
+        # Dropping selected columns
+        self.data.drop(columns=self.columns_to_drop, inplace=True)
 
         assert isinstance(self.data, pd.DataFrame), "Data is not a pandas dataframe"
 
@@ -88,8 +96,8 @@ class WeeklyFinancialForecastingModel:
             fred_data[self.date_name] = pd.to_datetime(fred_data[self.date_name])
 
             # Forward fill in case of missing values
-            if 'CONSUMER_SENTIMENT' in fred_data.columns:
-                fred_data['CONSUMER_SENTIMENT'] = pd.to_numeric(fred_data['CONSUMER_SENTIMENT'], errors='coerce')
+            if 'UMCSENT' in fred_data.columns:
+                fred_data['UMCSENT'] = pd.to_numeric(fred_data['UMCSENT'], errors='coerce')
 
             # Set index and resample
             fred_data.set_index(self.date_name, inplace=True)
@@ -100,20 +108,20 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def add_continuous_data(self):
+    def add_continuous_data(self, start_date='2000-01-01'):
 
         if len(self.continuous_series) != 0:
+
             for cont_data in self.continuous_series:
-                data_loaded = pd.read_csv(cont_data)
+                data_loaded = web.DataReader(cont_data, 'fred', start_date)
+                data_loaded.reset_index(inplace=True)
+
                 data_loaded[self.date_name] = pd.to_datetime(data_loaded[self.date_name])
                 data_loaded.set_index(self.date_name, inplace=True)
 
                 # Create dataframe with the mean of last month's values on the first of every month
                 data_resampled = pd.to_numeric(data_loaded.iloc[:, 0], errors='coerce').resample(self.resampling_day)\
                     .mean().reset_index()
-
-                # Rename columns
-                data_resampled.columns = [self.date_name, cont_data.replace('.csv', '').upper()]
 
                 # Merge with main dataframe
                 self.data = self.data.merge(data_resampled, how='outer', on=self.date_name)
@@ -125,23 +133,19 @@ class WeeklyFinancialForecastingModel:
         inv_sentiment = pd.read_excel(aaii_sentiment).iloc[2:, :4]
         inv_sentiment.columns = ['DATE', 'BULLISH', 'NEUTRAL', 'BEARISH']
 
+        # Convert to datetime
+        inv_sentiment['DATE'] = pd.to_datetime(inv_sentiment['DATE'])
+
         # Drop the neutral reading
         inv_sentiment.drop(columns=sent_cols_to_drop, inplace=True)
 
+        # Define a dictionary to map resampling days to the number of days to shift
+        resampling_days_shift = {'W-Mon': 4, 'W-Tue': 5, 'W-Wed': 6, 'W-Thu': 0, 'W-Fri': 1, 'W-Sat': 2}
+
         if len(inv_sentiment.columns) >= 2:
             # Convert to datetime and resample if needed based on self.resampling_day
-            if self.resampling_day == 'W-Mon':
-                inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(4, unit='d')
-            elif self.resampling_day == 'W-Tue':
-                inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(5, unit='d')
-            elif self.resampling_day == 'W-Wed':
-                inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(6, unit='d')
-            elif self.resampling_day == 'W-Thu':
-                pass  # no change needed, data is already on Thursday
-            elif self.resampling_day == 'W-Fri':
-                inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(1, unit='d')
-            elif self.resampling_day == 'W-Sat':
-                inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(2, unit='d')
+            shift_days = resampling_days_shift.get(self.resampling_day, 0)
+            inv_sentiment[self.date_name] = inv_sentiment[self.date_name] + pd.to_timedelta(shift_days, unit='d')
 
             # Merge investor sentiment to indices
             self.data = self.data.merge(inv_sentiment, how='outer', on=self.date_name)
@@ -158,12 +162,17 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def define_outcome_var(self, series_diff: bool):
+    def define_outcome_var(self):
         # Define outcome variable
-        if series_diff:
+        if self.series_diff == 2:
             self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]] - self.data[self.outcome_vars[1]]
-        else:
+        elif self.series_diff == 4:
+            self.data['OUTCOME_VAR'] = (self.data[self.outcome_vars[0]] + self.data[self.outcome_vars[1]]) - \
+                                       (self.data[self.outcome_vars[2]] + self.data[self.outcome_vars[3]])
+        elif self.series_diff == 0:
             self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]]
+        else:
+            raise ValueError('Invalid series_diff value! Must be 0, 2 or 4.')
 
         # Shift outcome variable to prevent predicting on concurrent information
         self.data['OUTCOME_VAR_1'] = self.data['OUTCOME_VAR'].shift(-1)
@@ -181,27 +190,30 @@ class WeeklyFinancialForecastingModel:
                         cg_length=10, stdev_length=30):
 
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
-                                                ['Large Cap Value', 'Large Cap Growth']):
+                                                ['Small Cap Value', 'Small Cap Growth',
+                                                 'Large Cap Value', 'Large Cap Growth']):
             # Create proxy small minus big
             self.data['SMB'] = (self.data['Small Cap Value'] + self.data['Small Cap Growth']) - \
                                (self.data['Large Cap Value'] + self.data['Large Cap Growth'])
-        elif 'HML' in extra_features_list:
+
+        elif 'HML' in extra_features_list and all(item in self.data.columns for item in
+                                                  ['Small Cap Value', 'Small Cap Growth',
+                                                   'Large Cap Value', 'Large Cap Growth']):
             # Create proxy high minus low
             self.data['HML'] = (self.data['Small Cap Value'] + self.data['Large Cap Value']) - \
                                (self.data['Small Cap Growth'] + self.data['Large Cap Growth'])
 
         # Create list of predictors
-        all_predictors = [var for var in self.data.columns if var not in ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR']
-                          + features_no_ma]
+        to_exclude = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR'] + features_no_ma
+        all_predictors = [var for var in self.data.columns if var not in to_exclude]
 
         # Create differences
         for var in all_predictors + features_no_ma:
             for timespan in [1]:
                 self.data[f'{var}_DIFF_{timespan}'] = self.data[var].diff(timespan)
 
-        # Fill real interest rates inplace
+        # Fill monthly fred series forward
         for var in self.fred_series:
-            var = var.replace('.csv', '').upper()
             self.data[var] = self.data[var].replace(0, np.nan)
             self.data[var].fillna(method='ffill', inplace=True)
 
@@ -273,7 +285,7 @@ class WeeklyFinancialForecastingModel:
                      ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR']]
 
         if exclude_base_outcome_var:
-            pred_vars= pred_vars + ['OUTCOME_VAR']
+            pred_vars = pred_vars + ['OUTCOME_VAR']
 
         # Number of seeds to evaluate
         for seed in range(self.num_rounds):
@@ -291,10 +303,10 @@ class WeeklyFinancialForecastingModel:
                                  (self.data.index <= pd.to_datetime(timesplit) + pd.Timedelta(days=365))]
 
                 # Split into X and Y
-                X_train = train[pred_vars]
-                X_test = test[pred_vars]
-                y_train = train['OUTCOME_VAR_1_INDICATOR']
-                y_test = test['OUTCOME_VAR_1_INDICATOR']
+                X_train = train[pred_vars].values
+                X_test = test[pred_vars].values
+                y_train = train['OUTCOME_VAR_1_INDICATOR'].values
+                y_test = test['OUTCOME_VAR_1_INDICATOR'].values
 
                 # Train the model
                 rf.fit(X_train, y_train)
@@ -346,11 +358,6 @@ class WeeklyFinancialForecastingModel:
 
         # Use list comprehension to select the columns that match the pattern
         selected_columns = [col for col in self.data.columns if re.match(pattern, col)]
-
-        # Rename columns
-        evals = len(selected_columns)
-        self.data[selected_columns[:round(len(selected_columns)/2)]].columns = \
-            [f'REAL_PRED_PROBA_CLS_{num}' for num in range(evals)]
 
         # Calculate the mean predicted probability
         self.data['MEAN_PRED_PROBA'] = self.data[selected_columns].mean(axis=1)
@@ -487,11 +494,12 @@ class WeeklyFinancialForecastingModel:
 
                 # change resampling day
                 self.resampling_day = resampling_day
+                self.columns_to_drop = config['columns_to_drop']
+
                 self.read_data()
 
                 self.fred_series = config['fred_series']
                 self.continuous_series = config['continuous_series']
-                self.columns_to_drop = config['columns_to_drop']
 
                 # Call the methods
                 self.create_log()
@@ -500,10 +508,9 @@ class WeeklyFinancialForecastingModel:
                 self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
                                                  sent_cols_to_drop=config['sent_cols_to_drop'])
                 self.fill_missing_values()
-                self.define_outcome_var(series_diff=True)
+                self.define_outcome_var()
                 self.create_features(extra_features_list=config['extra_features_list'],
-                                     features_no_ma=[var.replace('.csv', '').upper() for var in self.fred_series] +
-                                                    config['continuous_no_ma'],
+                                     features_no_ma=self.fred_series + config['continuous_no_ma'],
                                      momentum_diff_list=config['momentum_diff_list'],
                                      ma_timespans=config['ma_timespans'])
                 self.build_model(start_year=2014, end_year=2023,
@@ -543,7 +550,7 @@ class WeeklyFinancialForecastingModel:
             self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
                                              sent_cols_to_drop=config['sent_cols_to_drop'])
             self.fill_missing_values()
-            self.define_outcome_var(series_diff=True)
+            self.define_outcome_var()
             self.create_features(extra_features_list=config['extra_features_list'],
                                  features_no_ma=self.fred_series + config['continuous_no_ma'],
                                  momentum_diff_list=config['momentum_diff_list'],

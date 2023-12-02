@@ -19,7 +19,7 @@ feature_configs = [
 
     {'extra_features_list': ['WOY', 'RSI', 'SMB', 'APO'],
      'ma_timespans': [4, 12],
-     'columns_to_drop': ['Nasdaq', 'SP500', 'VIX'],  # Drop VIX
+     'columns_to_drop': ['Nasdaq', 'SP500'],
      'fred_series': ['REAINTRATREARAT1YE'],
      'continuous_series': [],
      'sent_cols_to_drop': ['BULLISH', 'NEUTRAL', 'BEARISH'],
@@ -31,7 +31,7 @@ feature_configs = [
 
     {'extra_features_list': ['SMB', 'APO'],
      'ma_timespans': [4, 10],
-     'columns_to_drop': ['SP500', 'VIX'],  # Drop VIX
+     'columns_to_drop': ['Nasdaq', 'SP500'],
      'fred_series': ['EXPINF10YR', 'REAINTRATREARAT1YE'],
      'continuous_series': [],
      'sent_cols_to_drop': ['NEUTRAL', 'BULLISH', 'BEARISH'],
@@ -45,16 +45,15 @@ feature_configs = [
 
 # Initialize the class with required arguments
 model = WeeklyFinancialForecastingModel(log_path='logs/HML_output_log.txt',
-                                        returns_data='all_indices.csv',
-                                        stocks_list=['IWD', 'IWF', 'IWN', 'IWO', 'QQQ', '^GSPC', '^VIX'],
+                                        stocks_list=['IWD', 'IWF', 'IWN', 'IWO', 'QQQ', '^GSPC'],
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',
                                         date_name='DATE',
                                         col_names=['DATE', 'Large Cap Value', 'Large Cap Growth', 'Small Cap Value',
-                                                   'Small Cap Growth', 'Nasdaq', 'SP500', 'VIX'],
+                                                   'Small Cap Growth', 'Nasdaq', 'SP500'],
                                         columns_to_drop=['Nasdaq', 'SP500'],
                                         outcome_vars=['Small Cap Value', 'Small Cap Growth'],
-                                        fred_series=['real_interest_rate.csv'],
+                                        fred_series=['REAINTRATREARAT1YE'],
                                         continuous_series=[],
                                         num_rounds=30,
                                         test_start_date='2014-01-01',

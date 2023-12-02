@@ -16,9 +16,9 @@ os.chdir(upper_dir)
 def build_random_config():
     # Define the options for each configuration
     features_options = ['WOY', 'RSI', 'APO', 'CG']
-    columns_options = ['Large Cap Value', 'Large Cap Growth', 'Nasdaq']
-    fred_series_options = ['real_interest_rate.csv', 'inflation_expectation.csv', 'consumer_sentiment.csv']
-    continuous_series_options = ['10_year_yield.csv', 'classic_yield_curve.csv']
+    columns_options = ['Large Cap Value', 'Large Cap Growth', 'Nasdaq', 'VIX']
+    fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
+    continuous_series_options = ['DGS10', 'T10Y2Y']
     sentiment_options = ['BULLISH', 'NEUTRAL', 'BEARISH']
 
     # Generate random configurations
@@ -31,14 +31,8 @@ def build_random_config():
     max_features = np.round(np.random.uniform(0.33, 0.45), 2)
     n_estimators = np.random.randint(70, 140)
     exclude_base_outcome = False  # np.random.choice([True, False])
-    momentum_diff_list = (np.random.choice(extra_features_list,
-                                           size=np.random.randint(0, len(extra_features_list)),
-                                           replace=False)).tolist()
-
-    if len(continuous_series) > 0:
-        continuous_no_ma = [np.random.choice([var.replace('.csv', '').upper() for var in continuous_series])]
-    else:
-        continuous_no_ma = []
+    momentum_diff_list = []
+    continuous_no_ma = []
 
     # Build the configuration dictionary
     config = {
@@ -58,30 +52,49 @@ def build_random_config():
     return config
 
 
-# Test the function
-feature_configs = [build_random_config() for _ in range(1)]
+# Build random configurations
+random_configs = [build_random_config() for _ in range(50)]
 
 # Add the best configuration to the list (currently known)
 feature_configs = [
-    {'extra_features_list': ['WOY', 'RSI', 'SMB'], 'ma_timespans': [4, 12], 'columns_to_drop': ['Nasdaq', 'SP500'],
-     'fred_series': ['real_interest_rate.csv'], 'continuous_series': [],
-     'sent_cols_to_drop': ['BULLISH', 'NEUTRAL', 'BEARISH'], 'max_features': 0.4, 'n_estimators': 100,
-     'exclude_base_outcome': False, 'continuous_no_ma': [], 'momentum_diff_list': ['RSI']},
 
-    {'extra_features_list': ['SMB', 'APO', 'WOY'], 'ma_timespans': [4, 10], 'columns_to_drop': ['SP500'],
-     'fred_series': ['consumer_sentiment.csv', 'real_interest_rate.csv'],
-     'continuous_series': ['classic_yield_curve.csv'], 'sent_cols_to_drop': ['NEUTRAL', 'BULLISH', 'BEARISH'],
-     'max_features': 0.38, 'n_estimators': 130, 'exclude_base_outcome': False,
-     'continuous_no_ma': ['CLASSIC_YIELD_CURVE'], 'momentum_diff_list': []},
+    {'extra_features_list': ['WOY', 'RSI', 'SMB', 'APO', 'CG'],
+     'ma_timespans': [4, 12],
+     'columns_to_drop': ['Nasdaq', 'SP500'],
+     'fred_series': ['real_interest_rate.csv'],
+     'continuous_series': [],
+     'sent_cols_to_drop': ['BULLISH', 'NEUTRAL', 'BEARISH'],
+     'max_features': 0.4,
+     'n_estimators': 100,
+     'exclude_base_outcome': False,
+     'continuous_no_ma': [],
+     'momentum_diff_list': []},  # .532
 
-    {'extra_features_list': ['SMB', 'APO', 'WOY'], 'ma_timespans': [4, 13],
-     'columns_to_drop': ['SP500', 'Large Cap Value', 'Large Cap Growth', 'Nasdaq'],
-     'fred_series': ['real_interest_rate.csv', 'consumer_sentiment.csv'],
-     'continuous_series': [], 'sent_cols_to_drop': ['NEUTRAL', 'BULLISH', 'BEARISH'],
-     'max_features': 0.4, 'n_estimators': 116, 'exclude_base_outcome': True, 'continuous_no_ma': [],
-     'momentum_diff_list': ['SMB']}
+    {'extra_features_list': ['WOY', 'RSI', 'SMB'],
+     'ma_timespans': [3, 12],
+     'columns_to_drop': ['Nasdaq', 'SP500'],
+     'fred_series': ['real_interest_rate.csv'],
+     'continuous_series': [],
+     'sent_cols_to_drop': ['BULLISH', 'NEUTRAL', 'BEARISH'],
+     'max_features': 0.4,
+     'n_estimators': 100,
+     'exclude_base_outcome': False,
+     'continuous_no_ma': [],
+     'momentum_diff_list': []},  # .531
 
-] + feature_configs
+    {'extra_features_list': ['SMB', 'APO', 'WOY'],
+     'ma_timespans': [4, 10],
+     'columns_to_drop': ['SP500'],
+     'fred_series': ['inflation_expectation.csv', 'real_interest_rate.csv'],
+     'continuous_series': [],
+     'sent_cols_to_drop': ['NEUTRAL', 'BULLISH', 'BEARISH'],
+     'max_features': 0.35,
+     'n_estimators': 135,
+     'exclude_base_outcome': False,
+     'continuous_no_ma': [],
+     'momentum_diff_list': []},  # .531
+
+] + random_configs
 
 # Print the configurations
 for configuration in feature_configs:
@@ -89,15 +102,16 @@ for configuration in feature_configs:
 
 # Initialize the class with required arguments
 model = WeeklyFinancialForecastingModel(log_path='logs/HML_output_log_test.txt',
-                                        returns_data='all_indices.csv',
+                                        stocks_list=['IWD', 'IWF', 'IWN', 'IWO', 'QQQ', '^GSPC', '^VIX'],
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',
                                         date_name='DATE',
                                         col_names=['DATE', 'Large Cap Value', 'Large Cap Growth', 'Small Cap Value',
-                                                   'Small Cap Growth', 'Nasdaq', 'SP500'],
+                                                   'Small Cap Growth', 'Nasdaq', 'SP500', 'VIX'],
                                         columns_to_drop=['Nasdaq', 'SP500'],
                                         outcome_vars=['Small Cap Value', 'Small Cap Growth'],
-                                        fred_series=['real_interest_rate.csv'],
+                                        series_diff=2,
+                                        fred_series=[],
                                         continuous_series=[],
                                         num_rounds=25,
                                         test_start_date='2014-01-01',
@@ -111,5 +125,5 @@ for run, bal_acc_list in results.items():
     print(f"Run {run}: {round(np.mean(bal_acc_list), 3)}")
 
 # Save the results dictionary as a pickle file
-with open('results/HML_results_run3.pkl', 'wb') as f:
+with open('results/HML_results.pkl', 'wb') as f:
     pickle.dump(results, f)
