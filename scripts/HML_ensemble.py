@@ -27,7 +27,7 @@ feature_configs = [
      'n_estimators': 100,
      'exclude_base_outcome': False,
      'continuous_no_ma': [],
-     'momentum_diff_list': []},  # .532
+     'momentum_diff_list': []},
 
     {'extra_features_list': ['SMB', 'APO'],
      'ma_timespans': [4, 10],
@@ -39,7 +39,7 @@ feature_configs = [
      'n_estimators': 135,
      'exclude_base_outcome': False,
      'continuous_no_ma': [],
-     'momentum_diff_list': []},  # .531
+     'momentum_diff_list': []},
 
 ]
 
@@ -53,6 +53,7 @@ model = WeeklyFinancialForecastingModel(log_path='logs/HML_output_log.txt',
                                                    'Small Cap Growth', 'Nasdaq', 'SP500'],
                                         columns_to_drop=['Nasdaq', 'SP500'],
                                         outcome_vars=['Small Cap Value', 'Small Cap Growth'],
+                                        series_diff=2,
                                         fred_series=['REAINTRATREARAT1YE'],
                                         continuous_series=[],
                                         num_rounds=30,

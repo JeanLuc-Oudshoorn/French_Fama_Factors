@@ -38,6 +38,8 @@ class WeeklyFinancialForecastingModel:
         self.log_file = None
         self.intermediate_data = None
         self.cache = None
+        self.data_dict_fred = None
+        self.data_dict_cont = None
         self.read_data()
 
     def read_data(self):
@@ -82,22 +84,25 @@ class WeeklyFinancialForecastingModel:
 
     def add_monthly_fred_data(self, start_date='2000-01-01'):
 
-        data_dict = {}
+        if self.data_dict_fred is None:
+            data_dict = {}
+        else:
+            data_dict = self.data_dict_fred
 
-        for fred_data in self.fred_series:
-            data_dict[fred_data] = web.DataReader(fred_data, 'fred', start_date)
+        for var in self.fred_series:
+            if var not in data_dict.keys():
+                data_dict[var] = web.DataReader(var, 'fred', start_date)
 
-        self.data_dict = data_dict
+        self.data_dict_fred = data_dict
 
         # Extract and create date column
-        for key in data_dict.keys():
-            fred_data = data_dict[key]
+        for key in self.fred_series:
+            fred_data = self.data_dict_fred[key]
             fred_data.reset_index(inplace=True)
             fred_data[self.date_name] = pd.to_datetime(fred_data[self.date_name])
 
-            # Forward fill in case of missing values
-            if 'UMCSENT' in fred_data.columns:
-                fred_data['UMCSENT'] = pd.to_numeric(fred_data['UMCSENT'], errors='coerce')
+            # Add 14 days to the 'DATE' feature to account for info release date
+            fred_data[self.date_name] = fred_data[self.date_name] + pd.Timedelta(days=14)
 
             # Set index and resample
             fred_data.set_index(self.date_name, inplace=True)
@@ -112,15 +117,26 @@ class WeeklyFinancialForecastingModel:
 
         if len(self.continuous_series) != 0:
 
-            for cont_data in self.continuous_series:
-                data_loaded = web.DataReader(cont_data, 'fred', start_date)
-                data_loaded.reset_index(inplace=True)
+            if self.data_dict_cont is None:
+                data_dict = {}
+            else:
+                data_dict = self.data_dict_cont
 
-                data_loaded[self.date_name] = pd.to_datetime(data_loaded[self.date_name])
-                data_loaded.set_index(self.date_name, inplace=True)
+            for var in self.continuous_series:
+                if var not in data_dict.keys():
+                    data_dict[var] = web.DataReader(var, 'fred', start_date)
+
+            self.data_dict_cont = data_dict
+
+            for key in self.continuous_series:
+                cont_data = self.data_dict_cont[key]
+                cont_data.reset_index(inplace=True)
+
+                cont_data[self.date_name] = pd.to_datetime(cont_data[self.date_name])
+                cont_data.set_index(self.date_name, inplace=True)
 
                 # Create dataframe with the mean of last month's values on the first of every month
-                data_resampled = pd.to_numeric(data_loaded.iloc[:, 0], errors='coerce').resample(self.resampling_day)\
+                data_resampled = pd.to_numeric(cont_data.iloc[:, 0], errors='coerce').resample(self.resampling_day)\
                     .mean().reset_index()
 
                 # Merge with main dataframe
@@ -223,10 +239,24 @@ class WeeklyFinancialForecastingModel:
                 self.data[f'{var}_ROLLING_{timespan}'] = self.data[var].rolling(timespan).mean()
 
         # Create original prices back
-        original_smv = (np.exp(self.data['Small Cap Value'])).cumprod()
-        original_smg = (np.exp(self.data['Small Cap Growth'])).cumprod()
+        if self.series_diff == 2:
+            original_smv = (np.exp(self.data[self.outcome_vars[0]])).cumprod()
+            original_smg = (np.exp(self.data[self.outcome_vars[1]])).cumprod()
 
-        price_difference = original_smv - original_smg
+            price_difference = original_smv - original_smg
+
+        elif self.series_diff == 4:
+            original_smv = (np.exp(self.data[self.outcome_vars[0]])).cumprod() + \
+                           (np.exp(self.data[self.outcome_vars[1]])).cumprod()
+            original_smg = (np.exp(self.data[self.outcome_vars[2]])).cumprod() + \
+                           (np.exp(self.data[self.outcome_vars[3]])).cumprod()
+
+            price_difference = original_smv - original_smg
+
+        elif self.series_diff == 1:
+            price_difference = (np.exp(self.data[self.outcome_vars[0]])).cumprod()
+        else:
+            raise ValueError('Invalid series_diff value! Must be 1, 2 or 4.')
 
         # Add technical indicators
         if 'RSI' in extra_features_list:
