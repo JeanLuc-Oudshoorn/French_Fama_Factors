@@ -19,8 +19,8 @@ os.chdir(upper_dir)
 random_configs = [build_random_config() for _ in range(10)]
 
 # Add the best configurations from the HML model
-feature_configs = [modify_config(best_configs[0]) for _ in range(8)] + \
-                  [modify_config(best_configs[1]) for _ in range(2)]  # + random_configs
+feature_configs = [modify_config(best_configs[0], max_mutations=2) for _ in range(1)] + \
+                  [modify_config(best_configs[1], max_mutations=2) for _ in range(1)]  # + random_configs
 
 # Print the configurations
 for configuration in feature_configs:

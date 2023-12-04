@@ -8,20 +8,20 @@ import matplotlib.pyplot as plt
 
 def build_random_config():
     # Define the options for each configuration
-    features_options = ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV']
-    columns_options = ['Nasdaq', 'SP500', 'VIX', 'Large Cap Growth', 'Small Cap Growth']
+    features_options = ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV', 'SKEW', 'ZSCORE', 'MCGD', 'DEMA', 'DRAWD', 'MONTH']
+    columns_options = ['Nasdaq', 'SP500', 'VIX']
     fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
     continuous_series_options = ['DGS10', 'T10Y2Y', 'USEPUINDXD', 'AAAFF', 'DFF']
     sentiment_options = ['BULLISH', 'NEUTRAL', 'BEARISH']
 
     # Generate random configurations
-    extra_features_list = list(np.random.choice(features_options, np.random.randint(0, 5), replace=False))
+    extra_features_list = list(np.random.choice(features_options, np.random.randint(0, 7), replace=False))
     ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
     columns_to_drop = list(np.random.choice(columns_options, np.random.randint(0, 4), replace=False))
-    fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 4), replace=False))
+    fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 3), replace=False))
     continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 5), replace=False))
     sent_cols_to_drop = list(np.random.choice(sentiment_options, np.random.randint(1, 4), replace=False))
-    max_features = np.round(np.random.uniform(0.25, 0.45), 2)
+    max_features = np.round(np.random.uniform(0.2, 0.45), 2)
     n_estimators = np.random.randint(70, 140)
     exclude_base_outcome = np.random.choice([True, False])
     momentum_diff_list = []
@@ -52,12 +52,12 @@ def modify_config(config, max_mutations=3):
 
     # Define the options for each configuration
     options = {
-        'extra_features_list': ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV'],
-        'columns_to_drop': ['Nasdaq', 'SP500', 'VIX', 'Large Cap Growth', 'Small Cap Growth'],
+        'extra_features_list': ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV', 'SKEW', 'ZSCORE', 'MCGD', 'DEMA', 'DRAWD'],
+        'columns_to_drop': ['Nasdaq', 'SP500', 'VIX'],
         'fred_series': ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR'],
         'continuous_series': ['DGS10', 'T10Y2Y', 'USEPUINDXD', 'AAAFF', 'DFF'],
         'sent_cols_to_drop': ['BULLISH', 'NEUTRAL', 'BEARISH'],
-        'max_features': np.round(np.random.uniform(0.25, 0.45), 2),
+        'max_features': np.round(np.random.uniform(0.2, 0.45), 2),
         'n_estimators': np.random.randint(70, 140),
         'exclude_base_outcome': [True, False],
         'continuous_no_ma': [],
@@ -108,4 +108,3 @@ def visual_results_analysis(name, runs, num_rounds=25, save=True):
         if save:
             plt.savefig(f'../figures/{name}_result_{run}.png')
         plt.show()
-

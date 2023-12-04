@@ -1,68 +1,68 @@
 FULL PERIOD:
-Real Clas. Model Acc.: 0.571
-Real Clas. Model Bal. Acc.: 0.566
-Real Clas. Model Roc-Auc: 0.566
-Real Clas. Model Prec.: 0.563 
+Real Clas. Model Acc.: 0.568
+Real Clas. Model Bal. Acc.: 0.564
+Real Clas. Model Roc-Auc: 0.564
+Real Clas. Model Prec.: 0.552 
 
-PERIOD 2014-01-01 - 2015-01-01:
-Real Clas. Model Bal. Acc.: 0.607 
+PERIOD 2014-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.564 
 
-PERIOD 2015-01-01 - 2016-01-01:
-Real Clas. Model Bal. Acc.: 0.488 
-
-PERIOD 2016-01-01 - 2017-01-01:
-Real Clas. Model Bal. Acc.: 0.492 
-
-PERIOD 2017-01-01 - 2018-01-01:
-Real Clas. Model Bal. Acc.: 0.619 
-
-PERIOD 2018-01-01 - 2019-01-01:
-Real Clas. Model Bal. Acc.: 0.625 
-
-PERIOD 2019-01-01 - 2020-01-01:
-Real Clas. Model Bal. Acc.: 0.577 
-
-PERIOD 2020-01-01 - 2021-01-01:
-Real Clas. Model Bal. Acc.: 0.5 
-
-PERIOD 2021-01-01 - 2022-01-01:
-Real Clas. Model Bal. Acc.: 0.417 
-
-PERIOD 2022-01-01 - 2023-01-01:
+PERIOD 2015-01-01 - 2023-12-04 22:32:53.771703:
 Real Clas. Model Bal. Acc.: 0.555 
 
-PERIOD 2023-01-01 - 2024-01-01:
-Real Clas. Model Bal. Acc.: 0.596 
+PERIOD 2016-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.555 
 
-Num observations with probability >= 53%: 131
-Accuracy for predictions with probability >= 53%: 0.5802 
+PERIOD 2017-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.561 
 
-Num observations with probability >= 55%: 94
-Accuracy for predictions with probability >= 55%: 0.5532 
+PERIOD 2018-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.557 
+
+PERIOD 2019-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.549 
+
+PERIOD 2020-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.539 
+
+PERIOD 2021-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.537 
+
+PERIOD 2022-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.594 
+
+PERIOD 2023-01-01 - 2023-12-04 22:32:53.771703:
+Real Clas. Model Bal. Acc.: 0.587 
+
+Num observations with probability >= 53%: 143
+Accuracy for predictions with probability >= 53%: 0.5664 
+
+Num observations with probability >= 55%: 100
+Accuracy for predictions with probability >= 55%: 0.5600 
 
 Num observations with probability >= 57%: 62
-Accuracy for predictions with probability >= 57%: 0.5323 
+Accuracy for predictions with probability >= 57%: 0.5484 
 
-Num observations with probability >= 59%: 41
-Accuracy for predictions with probability >= 59%: 0.5366 
+Num observations with probability >= 59%: 34
+Accuracy for predictions with probability >= 59%: 0.5000 
 
-Num observations with probability >= 61%: 18
-Accuracy for predictions with probability >= 61%: 0.5556 
+Num observations with probability >= 61%: 14
+Accuracy for predictions with probability >= 61%: 0.5000 
 
-Num observations with probability <= 47%: 245
-Accuracy for predictions with probability <= 47%: 0.6204 
+Num observations with probability <= 47%: 218
+Accuracy for predictions with probability <= 47%: 0.5963 
 
-Num observations with probability <= 45%: 196
-Accuracy for predictions with probability <= 45%: 0.6020 
+Num observations with probability <= 45%: 167
+Accuracy for predictions with probability <= 45%: 0.5868 
 
-Num observations with probability <= 43%: 151
-Accuracy for predictions with probability <= 43%: 0.6159 
+Num observations with probability <= 43%: 118
+Accuracy for predictions with probability <= 43%: 0.5678 
 
-Num observations with probability <= 41%: 112
-Accuracy for predictions with probability <= 41%: 0.5982 
+Num observations with probability <= 41%: 83
+Accuracy for predictions with probability <= 41%: 0.5542 
 
-Num observations with probability <= 39%: 75
-Accuracy for predictions with probability <= 39%: 0.5733 
+Num observations with probability <= 39%: 41
+Accuracy for predictions with probability <= 39%: 0.5610 
 
-Mean One-week forward probability: 0.413 
+Mean One-week forward probability: 0.448 
 

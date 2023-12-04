@@ -40,6 +40,7 @@ class WeeklyFinancialForecastingModel:
         self.cache = None
         self.data_dict_fred = None
         self.data_dict_cont = None
+        self.current_date = pd.to_datetime('today')
         self.read_data()
 
     def read_data(self):
@@ -85,24 +86,30 @@ class WeeklyFinancialForecastingModel:
     def add_monthly_fred_data(self, start_date='2000-01-01'):
 
         if self.data_dict_fred is None:
-            data_dict = {}
+            data_dict_fred = {}
         else:
-            data_dict = self.data_dict_fred
+            data_dict_fred = self.data_dict_fred
 
         for var in self.fred_series:
-            if var not in data_dict.keys():
-                data_dict[var] = web.DataReader(var, 'fred', start_date)
+            if var not in data_dict_fred.keys():
+                data_dict_fred[var] = web.DataReader(var, 'fred', start_date)
 
-        self.data_dict_fred = data_dict
+        self.data_dict_fred = data_dict_fred
 
         # Extract and create date column
         for key in self.fred_series:
             fred_data = self.data_dict_fred[key]
+
+            # Check if 'level_0' is in fred_data's columns and drop it if it is
+            if 'level_0' in fred_data.columns:
+                fred_data = fred_data.drop(columns='level_0')
+
             fred_data.reset_index(inplace=True)
             fred_data[self.date_name] = pd.to_datetime(fred_data[self.date_name])
 
             # Add 14 days to the 'DATE' feature to account for info release date
             fred_data[self.date_name] = fred_data[self.date_name] + pd.Timedelta(days=14)
+            fred_data = fred_data[fred_data[self.date_name] <= self.current_date]
 
             # Set index and resample
             fred_data.set_index(self.date_name, inplace=True)
@@ -118,15 +125,15 @@ class WeeklyFinancialForecastingModel:
         if len(self.continuous_series) != 0:
 
             if self.data_dict_cont is None:
-                data_dict = {}
+                data_dict_cont = {}
             else:
-                data_dict = self.data_dict_cont
+                data_dict_cont = self.data_dict_cont
 
             for var in self.continuous_series:
-                if var not in data_dict.keys():
-                    data_dict[var] = web.DataReader(var, 'fred', start_date)
+                if var not in data_dict_cont.keys():
+                    data_dict_cont[var] = web.DataReader(var, 'fred', start_date)
 
-            self.data_dict_cont = data_dict
+            self.data_dict_cont = data_dict_cont
 
             for key in self.continuous_series:
                 cont_data = self.data_dict_cont[key]
@@ -173,6 +180,9 @@ class WeeklyFinancialForecastingModel:
         self.data.sort_values(self.date_name, inplace=True)
         self.data.set_index(self.date_name, inplace=True)
 
+        # Put today's date as maximum allowed date
+        self.data = self.data[self.data.index <= self.current_date]
+
         # Forward fill missing values
         self.data.ffill(inplace=True)
 
@@ -203,7 +213,8 @@ class WeeklyFinancialForecastingModel:
 
     def create_features(self, extra_features_list: list, features_no_ma: list, ma_timespans: list,
                         momentum_diff_list: list, rsi_window=14, apo_fast=12, apo_slow=26,
-                        cg_length=10, stdev_length=30):
+                        cg_length=10, stdev_length=30, skew_length=30, zscore_length=30,
+                        mcgd_length=10, dema_length=10):
 
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
                                                 ['Small Cap Value', 'Small Cap Growth',
@@ -275,12 +286,28 @@ class WeeklyFinancialForecastingModel:
             # Create rolling standard deviation
             self.data['STDEV'] = ta.stdev(price_difference, length=stdev_length)
 
-        # Define MA Cross
-        if 'MA_CROSS' in extra_features_list:
-            # Create MA cross
-            self.data['MA_CROSS'] = np.where(self.data['OUTCOME_VAR_ROLLING_' + str(ma_timespans[0])] >
-                                             self.data['OUTCOME_VAR_ROLLING_' + str(ma_timespans[1])], 1, 0)
+        if 'SKEW' in extra_features_list:
+            # Create rolling standard deviation
+            self.data['SKEW'] = ta.skew(price_difference, length=skew_length)
 
+        if 'ZSCORE' in extra_features_list:
+            # Create z-score
+            self.data['ZSCORE'] = ta.zscore(price_difference, length=zscore_length)
+
+        if 'MCGD' in extra_features_list:
+            # Create McGinely Dynamic
+            self.data['MCGD'] = ta.mcgd(price_difference, length=mcgd_length)
+
+        if 'DEMA' in extra_features_list:
+            # Create double exponential moving average
+            self.data['DEMA'] = ta.dema(price_difference, length=dema_length)
+
+        if 'DRAWD' in extra_features_list:
+            # Create drawdown
+            drawdown_frame = ta.drawdown(price_difference)
+            self.data = pd.concat([self.data, drawdown_frame], axis=1)
+
+        # Create momentum differences for technical indicators, if selected
         for var in ['APO', 'RSI', 'CG', 'STDEV', 'MA_CROSS']:
             if var in momentum_diff_list:
                 self.data[f'{var}_DIFF_1'] = self.data[var].diff(1)
@@ -312,9 +339,9 @@ class WeeklyFinancialForecastingModel:
 
         # Define dummy variables
         pred_vars = [var for var in self.data.columns if var not in
-                     ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR']]
+                     ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR']]
 
-        if exclude_base_outcome_var:
+        if not exclude_base_outcome_var:
             pred_vars = pred_vars + ['OUTCOME_VAR']
 
         # Number of seeds to evaluate
@@ -393,7 +420,10 @@ class WeeklyFinancialForecastingModel:
         self.data['MEAN_PRED_PROBA'] = self.data[selected_columns].mean(axis=1)
         self.data['MEAN_PRED_CLS'] = np.where(self.data['MEAN_PRED_PROBA'] >= 0.5, 1, 0)
 
-        # Evaluate one-year ahead predictions
+        # Filter the data for current date
+        self.data = self.data[self.data.index <= self.current_date]
+
+        # Evaluate full predictions
         y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
         y_pred = self.data[self.data.index >= self.test_start_date]['MEAN_PRED_CLS']
 
@@ -431,6 +461,8 @@ class WeeklyFinancialForecastingModel:
                 date_pair = [date_list[i], date_list[i + 1]]
                 # Append the date pair to the date_pairs list
                 date_pairs.append(date_pair)
+                # Replace the last entry in date_pair with today
+                date_pairs[-1][-1] = self.current_date
 
             for pair in date_pairs:
                 # Evaluate one-year ahead predictions
@@ -461,6 +493,7 @@ class WeeklyFinancialForecastingModel:
         if perform_sensitivity_test:
             sensitivity_test([0.53, 0.55, 0.57, 0.59, 0.61], ['53', '55', '57', '59', '61'], True)
             sensitivity_test([0.47, 0.45, 0.43, 0.41, 0.39], ['47', '45', '43', '41', '39'], False)
+
 
         print("Mean One-week forward probability:",
               round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
@@ -516,7 +549,8 @@ class WeeklyFinancialForecastingModel:
                 # Exit config if accuracy is too low
                 if early_stopping:
                     if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.495) or \
-                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.505):
+                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.505) or \
+                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.508):
 
                         print("Exit config due to low accuracy!")
                         results[str(i)] = bal_acc_list
@@ -550,7 +584,8 @@ class WeeklyFinancialForecastingModel:
                                  perm_feat=False,
                                  multiple_models=True)
 
-                self.final_evaluation(bal_acc_list=bal_acc_list)
+                self.final_evaluation(bal_acc_list=bal_acc_list,
+                                      perform_sensitivity_test=False)
                 self.close_log()
                 self.print_balanced_accuracy()
 
