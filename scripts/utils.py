@@ -6,16 +6,18 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
+# TODO: random lengths for created features
 def build_random_config():
     # Define the options for each configuration
-    features_options = ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV', 'SKEW', 'ZSCORE', 'MCGD', 'DEMA', 'DRAWD', 'MONTH']
+    features_options = ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV', 'SKEW', 'KURT', 'ZSCORE',
+                        'DEMA', 'DRAWD', 'CFO', 'ER', 'MONTH', 'HMLS']
     columns_options = ['Nasdaq', 'SP500', 'VIX']
     fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
     continuous_series_options = ['DGS10', 'T10Y2Y', 'USEPUINDXD', 'AAAFF', 'DFF']
     sentiment_options = ['BULLISH', 'NEUTRAL', 'BEARISH']
 
     # Generate random configurations
-    extra_features_list = list(np.random.choice(features_options, np.random.randint(0, 7), replace=False))
+    extra_features_list = list(np.random.choice(features_options, np.random.randint(0, 11), replace=False))
     ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
     columns_to_drop = list(np.random.choice(columns_options, np.random.randint(0, 4), replace=False))
     fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 3), replace=False))
@@ -52,7 +54,8 @@ def modify_config(config, max_mutations=3):
 
     # Define the options for each configuration
     options = {
-        'extra_features_list': ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV', 'SKEW', 'ZSCORE', 'MCGD', 'DEMA', 'DRAWD'],
+        'extra_features_list': ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV', 'SKEW', 'KURT', 'ZSCORE',
+                                'DEMA', 'DRAWD', 'CFO', 'ER', 'MONTH', 'HMLS'],
         'columns_to_drop': ['Nasdaq', 'SP500', 'VIX'],
         'fred_series': ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR'],
         'continuous_series': ['DGS10', 'T10Y2Y', 'USEPUINDXD', 'AAAFF', 'DFF'],
@@ -81,6 +84,11 @@ def modify_config(config, max_mutations=3):
             config[key] = random.choice(options[key])
         else:
             config[key] = options[key]
+
+    if 'continuous_series' in selected_keys:
+        config['continuous_no_ma'] = np.random.choice(config['continuous_series'],
+                                                      np.random.randint(0, len(config['continuous_series']) + 1),
+                                                      replace=False).tolist()
 
     return config
 

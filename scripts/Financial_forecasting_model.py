@@ -214,7 +214,7 @@ class WeeklyFinancialForecastingModel:
     def create_features(self, extra_features_list: list, features_no_ma: list, ma_timespans: list,
                         momentum_diff_list: list, rsi_window=14, apo_fast=12, apo_slow=26,
                         cg_length=10, stdev_length=30, skew_length=30, zscore_length=30,
-                        mcgd_length=10, dema_length=10):
+                        er_length=10, dema_length=10, kurt_length=30, cfo_length=9):
 
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
                                                 ['Small Cap Value', 'Small Cap Growth',
@@ -223,12 +223,22 @@ class WeeklyFinancialForecastingModel:
             self.data['SMB'] = (self.data['Small Cap Value'] + self.data['Small Cap Growth']) - \
                                (self.data['Large Cap Value'] + self.data['Large Cap Growth'])
 
-        elif 'HML' in extra_features_list and all(item in self.data.columns for item in
+        if 'SMBG' in extra_features_list and all(item in self.data.columns for item in
+                                                ['Small Cap Growth', 'Large Cap Growth']):
+            # Create proxy small minus big
+            self.data['SMBG'] = (self.data['Small Cap Growth'] - self.data['Large Cap Growth'])
+
+        if 'HML' in extra_features_list and all(item in self.data.columns for item in
                                                   ['Small Cap Value', 'Small Cap Growth',
                                                    'Large Cap Value', 'Large Cap Growth']):
             # Create proxy high minus low
             self.data['HML'] = (self.data['Small Cap Value'] + self.data['Large Cap Value']) - \
                                (self.data['Small Cap Growth'] + self.data['Large Cap Growth'])
+
+        if 'HMLS' in extra_features_list and all(item in self.data.columns for item in
+                                                ['Small Cap Value', 'Small Cap Growth']):
+            # Create proxy small minus big
+            self.data['HMLS'] = (self.data['Small Cap Value'] - self.data['Small Cap Growth'])
 
         # Create list of predictors
         to_exclude = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR'] + features_no_ma
@@ -290,13 +300,21 @@ class WeeklyFinancialForecastingModel:
             # Create rolling standard deviation
             self.data['SKEW'] = ta.skew(price_difference, length=skew_length)
 
+        if 'KURT' in extra_features_list:
+            # Create rolling kurtosis
+            self.data['KURT'] = ta.kurtosis(price_difference, length=kurt_length)
+
         if 'ZSCORE' in extra_features_list:
             # Create z-score
             self.data['ZSCORE'] = ta.zscore(price_difference, length=zscore_length)
 
-        if 'MCGD' in extra_features_list:
-            # Create McGinely Dynamic
-            self.data['MCGD'] = ta.mcgd(price_difference, length=mcgd_length)
+        if 'CFO' in extra_features_list:
+            # Create Chande Forecast Oscillator
+            self.data['CFO'] = ta.cfo(price_difference, length=cfo_length)
+
+        if 'ER' in extra_features_list:
+            # Create Efficiency ratio
+            self.data['ER'] = ta.er(price_difference, length=er_length)
 
         if 'DEMA' in extra_features_list:
             # Create double exponential moving average
@@ -550,9 +568,9 @@ class WeeklyFinancialForecastingModel:
                 if early_stopping:
                     if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.495) or \
                             (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.505) or \
-                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.508):
+                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.51):
 
-                        print("Exit config due to low accuracy!")
+                        print("Exit config due to low accuracy! \n")
                         results[str(i)] = bal_acc_list
                         break
 
