@@ -439,22 +439,29 @@ class WeeklyFinancialForecastingModel:
         self.data['MEAN_PRED_CLS'] = np.where(self.data['MEAN_PRED_PROBA'] >= 0.5, 1, 0)
 
         # Filter the data for current date
-        self.data = self.data[self.data.index <= self.current_date]
+        test_data = self.data[(self.data.index >= self.test_start_date) &
+                              (self.data.index <= self.current_date)].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
+                                                                                     'MEAN_PRED_CLS',
+                                                                                     'MEAN_PRED_PROBA'])
 
         # Evaluate full predictions
-        y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
-        y_pred = self.data[self.data.index >= self.test_start_date]['MEAN_PRED_CLS']
+        y_test = test_data['OUTCOME_VAR_1_INDICATOR']
+        y_pred = test_data['MEAN_PRED_CLS']
 
         # Create rolling accuracy of predictions
         if expanding_mean:
             self.data.loc[self.test_start_date:, 'REAL_CORRECT'] = (y_test == y_pred)
             self.data['REAL_EXPANDING_ACC'] = self.data['REAL_CORRECT'].expanding().mean()
             self.data['REAL_ROLLING_52_ACC'] = self.data['REAL_CORRECT'].rolling(52).mean()
-
-        acc = accuracy_score(y_test, y_pred)
-        bal_acc = balanced_accuracy_score(y_test, y_pred)
-        roc = roc_auc_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred)
+        try:
+            acc = accuracy_score(y_test, y_pred)
+            bal_acc = balanced_accuracy_score(y_test, y_pred)
+            roc = roc_auc_score(y_test, y_pred)
+            prec = precision_score(y_test, y_pred)
+        except:
+            print
+            print(y_test)
+            print(y_pred)
 
         # Full period classification results
         print("FULL PERIOD:")
@@ -479,8 +486,6 @@ class WeeklyFinancialForecastingModel:
                 date_pair = [date_list[i], date_list[i + 1]]
                 # Append the date pair to the date_pairs list
                 date_pairs.append(date_pair)
-                # Replace the last entry in date_pair with today
-                date_pairs[-1][-1] = self.current_date
 
             for pair in date_pairs:
                 # Evaluate one-year ahead predictions
@@ -509,8 +514,8 @@ class WeeklyFinancialForecastingModel:
                 print(f'Accuracy for predictions with probability {sign} {val}%: {accuracy_prob:.4f}', '\n')
 
         if perform_sensitivity_test:
-            sensitivity_test([0.53, 0.55, 0.57, 0.59, 0.61], ['53', '55', '57', '59', '61'], True)
-            sensitivity_test([0.47, 0.45, 0.43, 0.41, 0.39], ['47', '45', '43', '41', '39'], False)
+            sensitivity_test([0.53, 0.55], ['53', '55'], True)
+            sensitivity_test([0.47, 0.45], ['47', '45'], False)
 
 
         print("Mean One-week forward probability:",
@@ -607,12 +612,15 @@ class WeeklyFinancialForecastingModel:
                 self.close_log()
                 self.print_balanced_accuracy()
 
+            # TODO: make results a model attribute
             # Store the bal_acc_list in the results dictionary
             results[str(i)] = bal_acc_list
 
         return results
 
-    def build_model_ensemble(self, feature_configs):
+    def build_model_ensemble(self, feature_configs, entries=(0, 1)):
+
+        # feature_configs = [feature_configs[entries[0]], feature_configs[entries[1]]]
 
         for i, config in enumerate(feature_configs):
             if i == 0:

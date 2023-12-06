@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-# TODO: random lengths for created features
+# TODO: random lengths for technical indicators
 def build_random_config():
     # Define the options for each configuration
     features_options = ['WOY', 'RSI', 'APO', 'CG', 'HML', 'STDEV', 'SKEW', 'KURT', 'ZSCORE',
@@ -71,7 +71,7 @@ def modify_config(config, max_mutations=3):
     keys = list(config.keys())
 
     # Randomly select one or two keys
-    selected_keys = random.sample(keys, random.randint(1, max_mutations))
+    selected_keys = random.sample(keys, random.randint(2, max_mutations))
 
     # For each selected key, randomly select a new value from the corresponding options list
     for key in selected_keys:
@@ -85,10 +85,34 @@ def modify_config(config, max_mutations=3):
         else:
             config[key] = options[key]
 
+    config['continuous_no_ma'] = np.random.choice(config['continuous_series'],
+                                                  np.random.randint(0, len(config['continuous_series']) + 1),
+                                                  replace=False).tolist()
+
+    return config
+
+
+def crossover_config(config1, config2):
+    # Create a copy of the first config dictionary
+    config = config1.copy()
+
+    # Get a list of keys from the configuration dictionary
+    keys = list(config.keys())
+
+    # Randomly select a subset of keys
+    selected_keys = random.sample(keys, random.randint(1, len(keys)))
+
+    # For each key in the configuration dictionary
+    for key in keys:
+        # If the key is not in the selected subset, take the value from the second config
+        if key not in selected_keys:
+            config[key] = config2[key]
+
+    # If 'continuous_series' is in the selected subset, also include 'continuous_no_ma' from the first config
     if 'continuous_series' in selected_keys:
-        config['continuous_no_ma'] = np.random.choice(config['continuous_series'],
-                                                      np.random.randint(0, len(config['continuous_series']) + 1),
-                                                      replace=False).tolist()
+        config['continuous_no_ma'] = config1['continuous_no_ma']
+    else:
+        config['continuous_no_ma'] = config2['continuous_no_ma']
 
     return config
 
