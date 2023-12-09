@@ -10,10 +10,10 @@ Together they should provide some insight into where the market is headed in the
 
 The models are named as follows: 
 1. HML
-2. -
-3. -
+2. SMBG
+3. HMLL
 4. SMB
-5. -
-6. -
-7. -
-8. -
+5. SMBF
+6. HMLF
+7. SVLG
+8. SGLV
