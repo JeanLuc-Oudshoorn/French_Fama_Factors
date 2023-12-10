@@ -19,7 +19,7 @@ class WeeklyFinancialForecastingModel:
     def __init__(self, log_path: str, stocks_list: list, returns_data_date_column: str,
                  resampling_day: str, date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list,
                  series_diff: int, fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str,
-                 output_path: str):
+                 output_path: str, start_date: str = '2000-01-01'):
 
         self.log_path = log_path
         self.stocks_list = stocks_list
@@ -35,6 +35,7 @@ class WeeklyFinancialForecastingModel:
         self.num_rounds = num_rounds
         self.test_start_date = test_start_date
         self.output_path = output_path
+        self.start_date = start_date
         self.log_file = None
         self.intermediate_data = None
         self.cache = None
@@ -50,7 +51,7 @@ class WeeklyFinancialForecastingModel:
             tickers_data = yf.Tickers(' '.join(self.stocks_list))
 
             # Get historical data for closing prices
-            closing_prices = tickers_data.history(start=datetime(2000, 8, 1),
+            closing_prices = tickers_data.history(start=self.start_date,
                                                   interval='1d')['Close'].dropna()
 
             # Calculate log returns
@@ -83,7 +84,7 @@ class WeeklyFinancialForecastingModel:
         self.log_file = open(self.log_path, "w")
         sys.stdout = self.log_file
 
-    def add_monthly_fred_data(self, start_date='2000-01-01'):
+    def add_monthly_fred_data(self):
 
         if self.data_dict_fred is None:
             data_dict_fred = {}
@@ -92,7 +93,7 @@ class WeeklyFinancialForecastingModel:
 
         for var in self.fred_series:
             if var not in data_dict_fred.keys():
-                data_dict_fred[var] = web.DataReader(var, 'fred', start_date)
+                data_dict_fred[var] = web.DataReader(var, 'fred', self.start_date)
 
         self.data_dict_fred = data_dict_fred
 
@@ -120,7 +121,7 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def add_continuous_data(self, start_date='2000-01-01'):
+    def add_continuous_data(self):
 
         if len(self.continuous_series) != 0:
 
@@ -131,7 +132,7 @@ class WeeklyFinancialForecastingModel:
 
             for var in self.continuous_series:
                 if var not in data_dict_cont.keys():
-                    data_dict_cont[var] = web.DataReader(var, 'fred', start_date)
+                    data_dict_cont[var] = web.DataReader(var, 'fred', self.start_date)
 
             self.data_dict_cont = data_dict_cont
 
@@ -151,7 +152,8 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def add_investor_sentiment_data(self, aaii_sentiment: str, sent_cols_to_drop: list):
+    def add_investor_sentiment_data(self, sent_cols_to_drop: list,
+                                    aaii_sentiment: str = 'retail_investor_sentiment.xls'):
 
         inv_sentiment = pd.read_excel(aaii_sentiment).iloc[2:, :4]
         inv_sentiment.columns = ['DATE', 'BULLISH', 'NEUTRAL', 'BEARISH']
@@ -175,13 +177,42 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
+    def add_shiller_cape(self, apply: bool = True):
+
+        if apply:
+            # Read in Shiller CAPE data
+            cape_data = pd.read_csv('historic_cape.csv')
+
+            # Convert to datetime
+            cape_data[self.date_name] = pd.to_datetime(cape_data['Date'], format='%d/%m/%Y')
+
+            # Rename data column and drop old date
+            cape_data.rename(columns={'USA': 'CAPE'}, inplace=True)
+            cape_data.drop(columns=['Date'], inplace=True)
+
+            # TODO: Check when the data is released and add the appropriate number of days
+            # Add 5 days to the 'DATE' feature to account for info release date
+            cape_data[self.date_name] = cape_data[self.date_name] + pd.Timedelta(days=4)
+            cape_data = cape_data[cape_data[self.date_name] <= self.current_date]
+
+            # Set index and resample
+            cape_data.set_index(self.date_name, inplace=True)
+            resampled = cape_data.resample(self.resampling_day).first().reset_index()
+
+            # Perform merge
+            self.data = self.data.merge(resampled, how='outer', on=self.date_name)
+
+        return self.data
+
+
     def fill_missing_values(self):
         # Set index
         self.data.sort_values(self.date_name, inplace=True)
         self.data.set_index(self.date_name, inplace=True)
 
         # Put today's date as maximum allowed date
-        self.data = self.data[self.data.index <= self.current_date]
+        self.data = self.data[(self.data.index >= self.start_date) &
+                              (self.data.index <= self.current_date)]
 
         # Forward fill missing values
         self.data.ffill(inplace=True)
@@ -377,6 +408,7 @@ class WeeklyFinancialForecastingModel:
                 test = self.data[(self.data.index >= timesplit) &
                                  (self.data.index <= pd.to_datetime(timesplit) + pd.Timedelta(days=365))]
 
+
                 # Split into X and Y
                 X_train = train[pred_vars].values
                 X_test = test[pred_vars].values
@@ -438,30 +470,31 @@ class WeeklyFinancialForecastingModel:
         self.data['MEAN_PRED_PROBA'] = self.data[selected_columns].mean(axis=1)
         self.data['MEAN_PRED_CLS'] = np.where(self.data['MEAN_PRED_PROBA'] >= 0.5, 1, 0)
 
+        # Print full period ratio positives
+        print("Ratio positives (full period):", round(self.data['OUTCOME_VAR_1_INDICATOR'].mean(), 3))
+
         # Filter the data for current date
-        test_data = self.data[(self.data.index >= self.test_start_date) &
-                              (self.data.index <= self.current_date)].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
-                                                                                     'MEAN_PRED_CLS',
-                                                                                     'MEAN_PRED_PROBA'])
+        self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
+                                                                                   'MEAN_PRED_CLS',
+                                                                                   'MEAN_PRED_PROBA'])
+
+        # Print test period ratio positives
+        print("Ratio positives (test period):", round(self.data['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
 
         # Evaluate full predictions
-        y_test = test_data['OUTCOME_VAR_1_INDICATOR']
-        y_pred = test_data['MEAN_PRED_CLS']
+        y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
+        y_pred = self.data[self.data.index >= self.test_start_date]['MEAN_PRED_CLS']
 
         # Create rolling accuracy of predictions
         if expanding_mean:
             self.data.loc[self.test_start_date:, 'REAL_CORRECT'] = (y_test == y_pred)
             self.data['REAL_EXPANDING_ACC'] = self.data['REAL_CORRECT'].expanding().mean()
             self.data['REAL_ROLLING_52_ACC'] = self.data['REAL_CORRECT'].rolling(52).mean()
-        try:
-            acc = accuracy_score(y_test, y_pred)
-            bal_acc = balanced_accuracy_score(y_test, y_pred)
-            roc = roc_auc_score(y_test, y_pred)
-            prec = precision_score(y_test, y_pred)
-        except:
-            print
-            print(y_test)
-            print(y_pred)
+
+        acc = accuracy_score(y_test, y_pred)
+        bal_acc = balanced_accuracy_score(y_test, y_pred)
+        roc = roc_auc_score(y_test, y_pred)
+        prec = precision_score(y_test, y_pred)
 
         # Full period classification results
         print("FULL PERIOD:")
@@ -514,8 +547,8 @@ class WeeklyFinancialForecastingModel:
                 print(f'Accuracy for predictions with probability {sign} {val}%: {accuracy_prob:.4f}', '\n')
 
         if perform_sensitivity_test:
-            sensitivity_test([0.53, 0.55], ['53', '55'], True)
-            sensitivity_test([0.47, 0.45], ['47', '45'], False)
+            sensitivity_test([0.53, 0.55, 0.57], ['53', '55', '57'], True)
+            sensitivity_test([0.47, 0.45, 0.43], ['47', '45', '43'], False)
 
 
         print("Mean One-week forward probability:",
@@ -594,6 +627,7 @@ class WeeklyFinancialForecastingModel:
                 self.add_continuous_data()
                 self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
                                                  sent_cols_to_drop=config['sent_cols_to_drop'])
+                self.add_shiller_cape(config['cape'])
                 self.fill_missing_values()
                 self.define_outcome_var()
                 self.create_features(extra_features_list=config['extra_features_list'],
@@ -618,9 +652,7 @@ class WeeklyFinancialForecastingModel:
 
         return results
 
-    def build_model_ensemble(self, feature_configs, entries=(0, 1)):
-
-        # feature_configs = [feature_configs[entries[0]], feature_configs[entries[1]]]
+    def build_model_ensemble(self, feature_configs):
 
         for i, config in enumerate(feature_configs):
             if i == 0:
@@ -640,6 +672,7 @@ class WeeklyFinancialForecastingModel:
             self.add_continuous_data()
             self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
                                              sent_cols_to_drop=config['sent_cols_to_drop'])
+            self.add_shiller_cape(config['cape'])
             self.fill_missing_values()
             self.define_outcome_var()
             self.create_features(extra_features_list=config['extra_features_list'],
