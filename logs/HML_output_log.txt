@@ -1,11 +1,13 @@
-Ratio positives (full period): 0.493
+Ratio positives (full period): 0.493 
+
+Ratio positives (train period): 0.504
 Ratio positives (test period): 0.478 
 
 FULL PERIOD:
-Real Clas. Model Acc.: 0.557
-Real Clas. Model Bal. Acc.: 0.555
-Real Clas. Model Roc-Auc: 0.555
-Real Clas. Model Prec.: 0.539 
+Real Clas. Model Acc.: 0.555
+Real Clas. Model Bal. Acc.: 0.553
+Real Clas. Model Roc-Auc: 0.553
+Real Clas. Model Prec.: 0.537 
 
 PERIOD 2014-01-01 - 2015-01-01:
 Real Clas. Model Bal. Acc.: 0.571 
@@ -14,7 +16,7 @@ PERIOD 2015-01-01 - 2016-01-01:
 Real Clas. Model Bal. Acc.: 0.525 
 
 PERIOD 2016-01-01 - 2017-01-01:
-Real Clas. Model Bal. Acc.: 0.482 
+Real Clas. Model Bal. Acc.: 0.466 
 
 PERIOD 2017-01-01 - 2018-01-01:
 Real Clas. Model Bal. Acc.: 0.547 
@@ -37,23 +39,23 @@ Real Clas. Model Bal. Acc.: 0.521
 PERIOD 2023-01-01 - 2024-01-01:
 Real Clas. Model Bal. Acc.: 0.511 
 
-Num observations with probability >= 53%: 136
-Accuracy for predictions with probability >= 53%: 0.5368 
+Num observations with probability >= 53%: 140
+Accuracy for predictions with probability >= 53%: 0.5429 
 
-Num observations with probability >= 55%: 79
-Accuracy for predictions with probability >= 55%: 0.5823 
+Num observations with probability >= 55%: 78
+Accuracy for predictions with probability >= 55%: 0.5897 
 
-Num observations with probability >= 57%: 43
-Accuracy for predictions with probability >= 57%: 0.5814 
+Num observations with probability >= 57%: 44
+Accuracy for predictions with probability >= 57%: 0.5909 
 
 Num observations with probability <= 47%: 193
-Accuracy for predictions with probability <= 47%: 0.6114 
+Accuracy for predictions with probability <= 47%: 0.6062 
 
 Num observations with probability <= 45%: 141
 Accuracy for predictions with probability <= 45%: 0.5957 
 
-Num observations with probability <= 43%: 88
-Accuracy for predictions with probability <= 43%: 0.6364 
+Num observations with probability <= 43%: 90
+Accuracy for predictions with probability <= 43%: 0.6333 
 
-Mean One-week forward probability: 0.479 
+Mean One-week forward probability: 0.467 
 

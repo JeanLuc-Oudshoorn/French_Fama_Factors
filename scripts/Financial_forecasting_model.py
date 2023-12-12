@@ -46,6 +46,8 @@ class WeeklyFinancialForecastingModel:
 
     def read_data(self):
 
+        # TODO: Add Volume High Low data
+
         if self.cache is None:
             # Fetch the closing prices using the Tickers method
             tickers_data = yf.Tickers(' '.join(self.stocks_list))
@@ -247,6 +249,8 @@ class WeeklyFinancialForecastingModel:
                         cg_length=10, stdev_length=30, skew_length=30, zscore_length=30,
                         er_length=10, dema_length=10, kurt_length=30, cfo_length=9):
 
+        # TODO: Add year
+
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
                                                 ['Small Cap Value', 'Small Cap Growth',
                                                  'Large Cap Value', 'Large Cap Growth']):
@@ -351,10 +355,17 @@ class WeeklyFinancialForecastingModel:
             # Create double exponential moving average
             self.data['DEMA'] = ta.dema(price_difference, length=dema_length)
 
+
+        # TODO: Implement simpler drawdown
         if 'DRAWD' in extra_features_list:
             # Create drawdown
             drawdown_frame = ta.drawdown(price_difference)
             self.data = pd.concat([self.data, drawdown_frame], axis=1)
+
+        if 'MA_CROSS' in extra_features_list:
+            # Create MA cross
+            self.data['MA_CROSS'] = np.where(self.data[f'OUTCOME_VAR_ROLLING_{ma_timespans[0]}'] >
+                                             self.data[f'OUTCOME_VAR_ROLLING_{ma_timespans[1]}'], 1, 0)
 
         # Create momentum differences for technical indicators, if selected
         for var in ['APO', 'RSI', 'CG', 'STDEV', 'MA_CROSS']:
@@ -368,6 +379,10 @@ class WeeklyFinancialForecastingModel:
         elif 'MONTH' in extra_features_list:
             # Create month
             self.data['MONTH'] = self.data.index.month
+
+        if 'YEAR' in extra_features_list:
+            # Create year
+            self.data['YEAR'] = self.data.index.year
 
         # Drop missing values
         self.data.dropna(inplace=True)
@@ -471,7 +486,9 @@ class WeeklyFinancialForecastingModel:
         self.data['MEAN_PRED_CLS'] = np.where(self.data['MEAN_PRED_PROBA'] >= 0.5, 1, 0)
 
         # Print full period ratio positives
-        print("Ratio positives (full period):", round(self.data['OUTCOME_VAR_1_INDICATOR'].mean(), 3))
+        print("Ratio positives (full period):", round(self.data['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
+        print("Ratio positives (train period):", round(self.data[self.data.index < self.test_start_date]
+                                                       ['OUTCOME_VAR_1_INDICATOR'].mean(), 3))
 
         # Filter the data for current date
         self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
@@ -605,8 +622,8 @@ class WeeklyFinancialForecastingModel:
                 # Exit config if accuracy is too low
                 if early_stopping:
                     if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.495) or \
-                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.505) or \
-                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.51):
+                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.504) or \
+                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.508):
 
                         print("Exit config due to low accuracy! \n")
                         results[str(i)] = bal_acc_list

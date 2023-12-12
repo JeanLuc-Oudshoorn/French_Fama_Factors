@@ -128,7 +128,7 @@ def visual_results_analysis(name, runs, num_rounds=30, save=True):
         results = pickle.load(f)
 
     # Convert the results to a dataframe
-    results_df = pd.DataFrame(results)
+    results_df = pd.DataFrame.from_dict(results, orient='index').T
 
     # Add the day of the week to the dataframe
     results_df['day'] = [day for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] for _ in range(num_rounds)]
