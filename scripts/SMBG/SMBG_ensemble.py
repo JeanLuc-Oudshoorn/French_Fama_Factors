@@ -1,5 +1,5 @@
 from scripts.Financial_forecasting_model import WeeklyFinancialForecastingModel
-from logs.SMBG_best_configs import best_configs
+from logs.SMBG.SMBG_best_configs import best_configs
 import warnings
 import os
 
