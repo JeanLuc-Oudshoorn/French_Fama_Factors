@@ -46,8 +46,6 @@ class WeeklyFinancialForecastingModel:
 
     def read_data(self):
 
-        # TODO: Add Volume High Low data
-
         if self.cache is None:
             # Fetch the closing prices using the Tickers method
             tickers_data = yf.Tickers(' '.join(self.stocks_list))
@@ -56,15 +54,22 @@ class WeeklyFinancialForecastingModel:
             closing_prices = tickers_data.history(start=self.start_date,
                                                   interval='1d')['Close'].dropna()
 
+            # Get historical data for closing prices
+            volume_data = tickers_data.history(start=self.start_date,
+                                               interval='1d')['Volume'].dropna()
+
             # Calculate log returns
             self.data = (np.log(closing_prices / closing_prices.shift(1))).dropna()
+
+            # combine with volume data
+            self.data = pd.concat([self.data, volume_data], axis=1)
 
             # Convert date column to pandas datetime
             self.data.reset_index(inplace=True)
             self.data[self.returns_data_date_column] = pd.to_datetime(self.data[self.returns_data_date_column])
 
             # Set column names
-            self.data.columns = self.col_names
+            self.data.columns = self.col_names + [col_name + '_VOLUME' for col_name in self.col_names[1:]]
 
             # Build a cache of the data
             self.cache = self.data.copy()
@@ -225,13 +230,25 @@ class WeeklyFinancialForecastingModel:
         # Define outcome variable
         if self.series_diff == 2:
             self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]] - self.data[self.outcome_vars[1]]
+            self.data['OUTCOME_VOLUME'] = (self.data[self.outcome_vars[0] + '_VOLUME'] /
+                                           self.data[self.outcome_vars[1] + '_VOLUME'])
         elif self.series_diff == 4:
             self.data['OUTCOME_VAR'] = (self.data[self.outcome_vars[0]] + self.data[self.outcome_vars[1]]) - \
                                        (self.data[self.outcome_vars[2]] + self.data[self.outcome_vars[3]])
+            self.data['OUTCOME_VOLUME'] = (self.data[self.outcome_vars[0] + '_VOLUME'] +
+                                           self.data[self.outcome_vars[1] + '_VOLUME']) / \
+                                          (self.data[self.outcome_vars[2] + '_VOLUME'] +
+                                           self.data[self.outcome_vars[3] + '_VOLUME'])
         elif self.series_diff == 0:
             self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]]
+            self.data['OUTCOME_VOLUME'] = self.data[self.outcome_vars[0] + '_VOLUME']
         else:
             raise ValueError('Invalid series_diff value! Must be 0, 2 or 4.')
+
+        # Drop all other columns with 'VOLUME' in their names
+        volume_columns = self.data.filter(like='VOLUME').columns
+        volume_columns = volume_columns.drop('OUTCOME_VOLUME')
+        self.data.drop(columns=volume_columns, inplace=True)
 
         # Shift outcome variable to prevent predicting on concurrent information
         self.data['OUTCOME_VAR_1'] = self.data['OUTCOME_VAR'].shift(-1)
@@ -249,7 +266,6 @@ class WeeklyFinancialForecastingModel:
                         cg_length=10, stdev_length=30, skew_length=30, zscore_length=30,
                         er_length=10, dema_length=10, kurt_length=30, cfo_length=9):
 
-        # TODO: Add year
 
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
                                                 ['Small Cap Value', 'Small Cap Growth',
@@ -355,12 +371,9 @@ class WeeklyFinancialForecastingModel:
             # Create double exponential moving average
             self.data['DEMA'] = ta.dema(price_difference, length=dema_length)
 
-
-        # TODO: Implement simpler drawdown
         if 'DRAWD' in extra_features_list:
             # Create drawdown
-            drawdown_frame = ta.drawdown(price_difference)
-            self.data = pd.concat([self.data, drawdown_frame], axis=1)
+            self.data['DRAWD'] = 1 - price_difference / price_difference.cummax()
 
         if 'MA_CROSS' in extra_features_list:
             # Create MA cross

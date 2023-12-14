@@ -4,6 +4,7 @@ import pickle
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 import re
 
 
@@ -50,6 +51,52 @@ def build_random_config():
     }
 
     return config
+
+
+def build_custom_random_config():
+    # Define the options for each configuration
+    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'SMB',
+                        'DEMA', 'CFO', 'ER', 'HML', 'MA_CROSS', 'YEAR', 'DRAWD']
+    columns_options = ['Nasdaq', 'SP500', 'VIX']
+    fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
+    continuous_series_options = ['DGS10', 'T10Y2Y', 'USEPUINDXD', 'AAAFF', 'DFF']
+    sentiment_options = ['BULLISH', 'NEUTRAL', 'BEARISH']
+
+    # Generate random configurations
+    extra_features_list = ['WOY'] + list(np.random.choice(features_options, np.random.randint(1, 6),
+                                                                 replace=False))
+    extra_features_list = random.choice([extra_features_list, extra_features_list[1:]])
+    columns_to_drop = columns_options
+    ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
+    fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
+    continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 4), replace=False))
+    sent_cols_to_drop = list(np.random.choice(sentiment_options, np.random.randint(2, 4), replace=False))
+    cape = np.random.choice([True, False], p=[0.35, 0.65])
+    max_features = np.round(np.random.uniform(0.2, 0.4), 2)
+    n_estimators = np.random.randint(65, 110)
+    exclude_base_outcome = np.random.choice([True, False])
+    momentum_diff_list = []
+    continuous_no_ma = np.random.choice(continuous_series, np.random.randint(0, len(continuous_series) + 1),
+                                        replace=False).tolist()
+
+    # Build the configuration dictionary
+    config = {
+        'extra_features_list': extra_features_list,
+        'ma_timespans': ma_timespans,
+        'columns_to_drop': columns_to_drop,
+        'fred_series': fred_series,
+        'continuous_series': continuous_series,
+        'sent_cols_to_drop': sent_cols_to_drop,
+        'cape': cape,
+        'max_features': max_features,
+        'n_estimators': n_estimators,
+        'exclude_base_outcome': exclude_base_outcome,
+        'continuous_no_ma': continuous_no_ma,
+        'momentum_diff_list': momentum_diff_list
+    }
+
+    return config
+
 
 
 def modify_config(config, max_mutations=3):
@@ -124,7 +171,7 @@ def crossover_config(config1, config2):
 
 def visual_results_analysis(name, runs, num_rounds=30, save=True):
     # Load the results dictionary from the pickle file
-    with open(f'../results/{name}_results.pkl', 'rb') as f:
+    with open(f'../../results/{name}/{name}_results.pkl', 'rb') as f:
         results = pickle.load(f)
 
     # Convert the results to a dataframe
@@ -143,5 +190,9 @@ def visual_results_analysis(name, runs, num_rounds=30, save=True):
 
         # Save the plot
         if save:
-            plt.savefig(f'../figures/{name}_result_{run}.png')
+            # Check if the directory exists, if not, create it
+            if not os.path.exists(f'../../figures/{name}/'):
+                os.makedirs(f'../../figures/{name}/')
+
+            plt.savefig(f'../../figures/{name}/{name}_result_{run}.png')
         plt.show()

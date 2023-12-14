@@ -6,14 +6,8 @@ import os
 # Ignore warnings
 warnings.filterwarnings("ignore")
 
-# Get the current working directory
-cwd = os.getcwd()
-
-# Get the upper directory
-upper_dir = os.path.dirname(cwd)
-
-# Change the working directory to the upper directory
-os.chdir(upper_dir)
+# Change the working directory to two levels up
+os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Initialize the class with required arguments
 model = WeeklyFinancialForecastingModel(log_path='logs/HMLF/HMLF_output_log.txt',
@@ -24,8 +18,9 @@ model = WeeklyFinancialForecastingModel(log_path='logs/HMLF/HMLF_output_log.txt'
                                         col_names=['DATE', 'Large Cap Value', 'Large Cap Growth', 'Small Cap Value',
                                                    'Small Cap Growth', 'Nasdaq', 'SP500', 'VIX'],
                                         columns_to_drop=['Nasdaq', 'SP500'],
-                                        outcome_vars=['Small Cap Value', 'Small Cap Growth'],
-                                        series_diff=2,
+                                        outcome_vars=['Small Cap Value', 'Large Cap Value',
+                                                      'Small Cap Growth', 'Large Cap Growth'],
+                                        series_diff=4,
                                         fred_series=['REAINTRATREARAT1YE'],
                                         continuous_series=[],
                                         num_rounds=30,

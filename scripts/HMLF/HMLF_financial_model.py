@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import random
 from scripts.Financial_forecasting_model import WeeklyFinancialForecastingModel
-from scripts.custom_utils import *
+from scripts.utils import *
 import os
 
 # Change the working directory to two levels up
