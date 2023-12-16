@@ -58,6 +58,8 @@ class WeeklyFinancialForecastingModel:
             volume_data = tickers_data.history(start=self.start_date,
                                                interval='1d')['Volume'].dropna()
 
+            self.daily_data = closing_prices
+
             # Calculate log returns
             self.data = (np.log(closing_prices / closing_prices.shift(1))).dropna()
 
@@ -80,9 +82,6 @@ class WeeklyFinancialForecastingModel:
         self.data.set_index(self.date_name, inplace=True)
         self.data = self.data.apply(lambda x: x.resample(self.resampling_day).mean())
         self.data.reset_index(inplace=True)
-
-        # Dropping selected columns
-        self.data.drop(columns=self.columns_to_drop, inplace=True)
 
         assert isinstance(self.data, pd.DataFrame), "Data is not a pandas dataframe"
 
@@ -266,7 +265,11 @@ class WeeklyFinancialForecastingModel:
                         cg_length=10, stdev_length=30, skew_length=30, zscore_length=30,
                         er_length=10, dema_length=10, kurt_length=30, cfo_length=9):
 
+        # TODO: Percent diff between futures and current level
 
+        # TODO: Atlanta Fed GDP Now estimates? https://www.frbatlanta.org/cqer/research/gdpnow.aspx
+
+        # Add combinations of other features in the dataset
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
                                                 ['Small Cap Value', 'Small Cap Growth',
                                                  'Large Cap Value', 'Large Cap Growth']):
@@ -291,26 +294,7 @@ class WeeklyFinancialForecastingModel:
             # Create proxy small minus big
             self.data['HMLS'] = (self.data['Small Cap Value'] - self.data['Small Cap Growth'])
 
-        # Create list of predictors
-        to_exclude = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR'] + features_no_ma
-        all_predictors = [var for var in self.data.columns if var not in to_exclude]
-
-        # Create differences
-        for var in all_predictors + features_no_ma:
-            for timespan in [1]:
-                self.data[f'{var}_DIFF_{timespan}'] = self.data[var].diff(timespan)
-
-        # Fill monthly fred series forward
-        for var in self.fred_series:
-            self.data[var] = self.data[var].replace(0, np.nan)
-            self.data[var].fillna(method='ffill', inplace=True)
-
-        # Create rolling averages and as extra features
-        for var in all_predictors + [var + '_DIFF_1' for var in features_no_ma] + ['OUTCOME_VAR_DIFF_1']:
-            for timespan in ma_timespans:
-                self.data[f'{var}_ROLLING_{timespan}'] = self.data[var].rolling(timespan).mean()
-
-        # Create original prices back
+        # Create original prices back -- for technical indicators later
         if self.series_diff == 2:
             original_smv = (np.exp(self.data[self.outcome_vars[0]])).cumprod()
             original_smg = (np.exp(self.data[self.outcome_vars[1]])).cumprod()
@@ -329,6 +313,56 @@ class WeeklyFinancialForecastingModel:
             price_difference = (np.exp(self.data[self.outcome_vars[0]])).cumprod()
         else:
             raise ValueError('Invalid series_diff value! Must be 1, 2 or 4.')
+
+        # Add data
+        if 'FUT' in extra_features_list:
+            perc_diff_fut = (self.daily_data['ES=F'] - self.daily_data['^GSPC']) / self.daily_data['^GSPC'] * 100
+            # Convert perc_diff to a DataFrame and reset its index
+            perc_diff_df = perc_diff_fut.to_frame().reset_index()
+            perc_diff_df.columns = ['DATE', 'FUT']
+
+            # Create a DataFrame that contains all dates
+            all_dates_df = pd.DataFrame(pd.date_range(start=self.daily_data.index.min(),
+                                                      end=self.daily_data.index.max()),
+                                        columns=['DATE'])
+
+            # Merge perc_diff_df with all_dates_df
+            perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on='DATE', how='left')
+
+            # Fill NaN values with the last observed value
+            perc_diff_df['FUT'].fillna(method='ffill', inplace=True)
+
+            # Merge self.data and perc_diff_df on the date column
+            self.data = self.data.merge(perc_diff_df, how='left', on='DATE')
+
+        # Create a new list that contains the columns to be dropped only if they are not in self.outcome_vars
+        columns_to_drop = [col for col in self.columns_to_drop if col not in self.outcome_vars]
+
+        # Drop the selected columns
+        self.data.drop(columns=columns_to_drop, inplace=True)
+
+        # Only set DATE back as index if it isn't already
+        if not self.data.index.name == self.date_name:
+            self.data.set_index(self.date_name, inplace=True)
+
+        # Create list of predictors
+        to_exclude = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR'] + features_no_ma
+        all_predictors = [var for var in self.data.columns if var not in to_exclude]
+
+        # Create differences
+        for var in all_predictors + features_no_ma:
+            for timespan in [1]:
+                self.data[f'{var}_DIFF_{timespan}'] = self.data[var].diff(timespan)
+
+        # Fill monthly fred series forward
+        for var in self.fred_series:
+            self.data[var] = self.data[var].replace(0, np.nan)
+            self.data[var].fillna(method='ffill', inplace=True)
+
+        # Create rolling averages and as extra features
+        for var in all_predictors + [var + '_DIFF_1' for var in features_no_ma] + ['OUTCOME_VAR_DIFF_1']:
+            for timespan in ma_timespans:
+                self.data[f'{var}_ROLLING_{timespan}'] = self.data[var].rolling(timespan).mean()
 
         # Add technical indicators
         if 'RSI' in extra_features_list:
@@ -374,6 +408,10 @@ class WeeklyFinancialForecastingModel:
         if 'DRAWD' in extra_features_list:
             # Create drawdown
             self.data['DRAWD'] = 1 - price_difference / price_difference.cummax()
+
+        if 'DRAWU' in extra_features_list:
+            # Create 'draw up'
+            self.data['DRAWU'] = (price_difference - price_difference.cummin()) / price_difference.cummin()
 
         if 'MA_CROSS' in extra_features_list:
             # Create MA cross
@@ -634,9 +672,9 @@ class WeeklyFinancialForecastingModel:
 
                 # Exit config if accuracy is too low
                 if early_stopping:
-                    if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.495) or \
-                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.504) or \
-                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.508):
+                    if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.494) or \
+                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.503) or \
+                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.507):
 
                         print("Exit config due to low accuracy! \n")
                         results[str(i)] = bal_acc_list
@@ -724,3 +762,5 @@ class WeeklyFinancialForecastingModel:
                               bal_acc_list=[])
         self.close_log()
         self.print_balanced_accuracy()
+
+# TODO: Experiment with testing performance on similar instruments: IWN -> VBR
