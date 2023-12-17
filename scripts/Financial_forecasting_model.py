@@ -415,8 +415,14 @@ class WeeklyFinancialForecastingModel:
 
         if 'MA_CROSS' in extra_features_list:
             # Create MA cross
-            self.data['MA_CROSS'] = np.where(self.data[f'OUTCOME_VAR_ROLLING_{ma_timespans[0]}'] >
-                                             self.data[f'OUTCOME_VAR_ROLLING_{ma_timespans[1]}'], 1, 0)
+            # Calculate the rolling mean of price_difference for ma_timespans[0]
+            mean1 = price_difference.rolling(ma_timespans[0]).mean()
+
+            # Calculate the rolling mean of price_difference for ma_timespans[1]
+            mean2 = price_difference.rolling(ma_timespans[1]).mean()
+
+            # Perform the calculation (mean1 - mean2) / mean2
+            self.data['MA_CROSS'] = (mean1 - mean2) / mean2
 
         # Create momentum differences for technical indicators, if selected
         for var in ['APO', 'RSI', 'CG', 'STDEV', 'MA_CROSS']:
@@ -672,9 +678,9 @@ class WeeklyFinancialForecastingModel:
 
                 # Exit config if accuracy is too low
                 if early_stopping:
-                    if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.494) or \
-                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.503) or \
-                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.507):
+                    if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.493) or \
+                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.502) or \
+                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.505):
 
                         print("Exit config due to low accuracy! \n")
                         results[str(i)] = bal_acc_list

@@ -56,7 +56,7 @@ def build_random_config():
 
 def build_custom_random_config():
     # Define the options for each configuration
-    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'SMB',
+    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'SMB', 'FUT',
                         'DEMA', 'CFO', 'ER', 'HML', 'MA_CROSS', 'YEAR', 'DRAWD', 'DRAWU']
     columns_options = ['OUTCOME_VOLUME', 'VIX', 'Small Cap Value', 'Small Cap Growth',
                        'Large Cap Value', 'Large Cap Growth']
@@ -65,17 +65,17 @@ def build_custom_random_config():
     sentiment_options = ['BULLISH', 'NEUTRAL', 'BEARISH']
 
     # Generate random configurations
-    extra_features_list = ['FUT', 'WOY'] + list(np.random.choice(features_options, np.random.randint(1, 6),
+    extra_features_list = ['WOY'] + list(np.random.choice(features_options, np.random.randint(1, 7),
                                                                  replace=False))
     extra_features_list = random.choice([extra_features_list, extra_features_list[1:], extra_features_list[2:]])
     columns_to_drop = ['Nasdaq', 'SP500', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(1, 7), replace=False))
     ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
     fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
-    continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 4), replace=False))
+    continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 5), replace=False))
     sent_cols_to_drop = ['NEUTRAL'] + list(np.random.choice(sentiment_options, np.random.randint(1, 3), replace=False))
-    cape = np.random.choice([True, False], p=[0.35, 0.65])
-    max_features = np.round(np.random.uniform(0.2, 0.35), 2)
-    n_estimators = np.random.randint(65, 110)
+    cape = np.random.choice([True, False], p=[0.38, 0.62])
+    max_features = np.round(np.random.uniform(0.2, 0.37), 2)
+    n_estimators = np.random.randint(70, 120)
     exclude_base_outcome = np.random.choice([True, False])
     momentum_diff_list = []
     continuous_no_ma = np.random.choice(continuous_series, np.random.randint(0, len(continuous_series) + 1),

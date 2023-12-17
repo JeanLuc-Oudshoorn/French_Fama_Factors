@@ -2,7 +2,10 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+from scipy.linalg import pinv
 import warnings
+import subprocess
 import yfinance as yf
 import os
 import sys
@@ -13,62 +16,6 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 
 # Change the working directory to two levels up
 os.chdir(os.path.dirname(os.getcwd()))
-
-# Define the path to the log file
-log_path = 'logs/Financial_meta_model_log.txt'
-
-# Open the log file in write mode
-log_file = open(log_path, "w")
-sys.stdout = log_file
-
-# Get the names of all files and directories in the 'results' directory
-all_names = os.listdir('results')
-
-# Filter the list to only include directories
-model_names = [name for name in all_names if os.path.isdir(os.path.join('results', name))]
-
-# Get the most recent Friday
-today = datetime.today()
-last_friday = today - timedelta(days=(today.weekday() - 4) % 7)
-
-# Loop over the list of model names
-for model in model_names:
-    # Construct the path to the '_output.csv' file
-    file_path = os.path.join('results', model, f'{model}_output.csv')
-    # Get the last modified time of the file
-    last_modified_time = os.path.getmtime(file_path)
-
-    # Convert the last modified time to a datetime object
-    last_modified_date = datetime.fromtimestamp(last_modified_time)
-
-    # Check if the last modified date is before the most recent Friday
-    if last_modified_date.date() < last_friday.date():
-        warnings.warn(f"The file '{file_path}' was created before the most recent Friday.")
-
-    # Print the most recent running date for the script
-    print(f"The most recent running date for the script '{model}' is {last_modified_date.date()}.")
-
-# TODO: Run ensemble model if it hasn't been rerun
-
-# Initialize an empty dictionary to store the dataframes
-dfs = {}
-
-# Loop over the list of model names
-for model in model_names:
-    # Construct the path to the results file
-    file_path = os.path.join('results', model, f'{model}_output.csv')
-
-    # Load the results file into a dataframe and set 'DATE' as the index
-    df = pd.read_csv(file_path, index_col='DATE')
-
-    # Select the 'MEAN_PRED_PROBA' column and rename it to the model name
-    df = df[['MEAN_PRED_PROBA']].rename(columns={'MEAN_PRED_PROBA': model})
-
-    # Store the dataframe in the dictionary
-    dfs[model] = df
-
-# Join all the dataframes in the dictionary
-result = dfs[model_names[0]].join(dfs[model] for model in model_names[1:])
 
 # Define stock list
 stocks_list = ['IWD', 'IWF', 'IWN', 'IWO']
@@ -96,6 +43,68 @@ df_stocks = pd.concat(dfs_stocks.values(), axis=1, keys=dfs_stocks.keys())
 # Assign column names
 df_stocks.columns = ['Large Cap Value', 'Large Cap Growth', 'Small Cap Value', 'Small Cap Growth']
 
+# # Define the path to the log file
+# log_path = 'logs/Financial_meta_model_log.txt'
+#
+# # Open the log file in write mode
+# log_file = open(log_path, "w")
+# sys.stdout = log_file
+
+# Get the names of all files and directories in the 'results' directory
+all_names = os.listdir('results')
+
+# Filter the list to only include directories
+model_names = [name for name in all_names if os.path.isdir(os.path.join('results', name))]
+
+# Get the most recent Friday
+today = datetime.today()
+last_friday = today - timedelta(days=(today.weekday() - 4) % 7)
+
+# Loop over the list of model names
+for model in model_names:
+    # Construct the path to the '_output.csv' file
+    file_path = os.path.join('results', model, f'{model}_output.csv')
+    # Get the last modified time of the file
+    last_modified_time = os.path.getmtime(file_path)
+
+    # Convert the last modified time to a datetime object
+    last_modified_date = datetime.fromtimestamp(last_modified_time)
+
+    # Check if the last modified date is before the most recent Friday
+    if last_modified_date.date() < last_friday.date():
+        warnings.warn(f"The file '{file_path}' was created before the most recent Friday.")
+
+        # # Construct the path to the script
+        # script_path = os.path.join('scripts', model, f'{model}_ensemble.py')
+        #
+        # # Run the script
+        # subprocess.run(['python', script_path])
+
+    # Print the most recent running date for the script
+    print(f"The most recent running date for the script '{model}' is {last_modified_date.date()}.")
+
+print('\n')
+
+# Initialize an empty dictionary to store the dataframes
+dfs = {}
+
+# Loop over the list of model names
+for model in model_names:
+    # Construct the path to the results file
+    file_path = os.path.join('results', model, f'{model}_output.csv')
+
+    # Load the results file into a dataframe and set 'DATE' as the index
+    df = pd.read_csv(file_path, index_col='DATE')
+
+    # Select the 'MEAN_PRED_PROBA' column and rename it to the model name
+    df = df[['MEAN_PRED_PROBA']].rename(columns={'MEAN_PRED_PROBA': model})
+
+    # Store the dataframe in the dictionary
+    dfs[model] = df
+
+# Join all the dataframes in the dictionary
+result = dfs[model_names[0]].join(dfs[model] for model in model_names[1:])
+
 # Convert the index of result dataframe to datetime
 result.index = pd.to_datetime(result.index)
 
@@ -117,6 +126,9 @@ mapping = {'Large Cap Value': 0, 'Large Cap Growth': 1, 'Small Cap Value': 2, 'S
 # Map the column names to integers
 best_instrument = best_instrument.map(mapping)
 
+# Drop missing values
+result = result.dropna()
+
 # Add the best_instrument series to the result dataframe
 result['BEST'] = best_instrument
 
@@ -126,36 +138,140 @@ X = result.iloc[:, :8]
 # Define y
 y = result['BEST']
 
-# Define the split date
-split_date = '2019-01-01'
+# Define the number of months to retrain after
+rel_delta_months = 2
 
-# Split the dataframe into training and testing sets based on the split date
-X_train = X[X.index < split_date]
-X_test = X[X.index >= split_date]
-y_train = y[y.index < split_date]
-y_test = y[y.index >= split_date]
+# Define a list of random seeds
+random_seeds = np.arange(0, 20)
 
-# TODO: Retrain every year / month
 
-# Create an instance of the RandomForestClassifier class
-model = RandomForestClassifier(random_state=42)
+# ELM Functions
+def relu(x):
+    return np.maximum(x, 0, x)
 
-# Fit the model to the training data
-model.fit(X_train, y_train)
 
-# Predict the probabilities for the testing data
-y_pred_proba = model.predict_proba(X_test)
+def hidden_nodes(train_data, input_weights, biases):
+    dot_product = np.dot(train_data, input_weights)
+    dot_product = dot_product + biases
+    act_dot_product = relu(dot_product)
+    return act_dot_product
+
+
+def predict(pred_data, input_weights, biases, output_weights):
+    out = hidden_nodes(pred_data, input_weights, biases)
+    out = np.dot(out, output_weights)
+    return out
+
+
+def one_hot_encoding(targets, n_classes):
+    return np.eye(n_classes)[targets]
+
+
+def softmax(x):
+    # Compute the exponential of all elements in the input array
+    exps = np.exp(x - np.max(x))
+
+    # Return the exponential array normalized to have sum 1
+    return exps / np.sum(exps, axis=1, keepdims=True)
+
+
+# Loop over the list of random seeds
+def meta_model(random_seeds, elm, hidden_size=60):
+
+    # Initialize a list to store the prediction dataframes
+    dfs = []
+
+    for seed in random_seeds:
+        # Create an empty DataFrame to store the predictions
+        predictions_df = pd.DataFrame(columns=[0, 1, 2, 3])
+
+        # Define the start and end dates for the entire dataset
+        start_date = X.index.min()
+        end_date = X.index.max()
+
+        while start_date < end_date:
+            # Define the split date as the start date plus three months
+            split_date = start_date + relativedelta(months=rel_delta_months)
+
+            # Split the data into training and testing sets based on the split date
+            X_train = X[X.index < split_date]
+            X_test = X[(X.index >= split_date) & (X.index < split_date + relativedelta(months=rel_delta_months))]
+            y_train = y[y.index < split_date]
+            y_test = y[(y.index >= split_date) & (y.index < split_date + relativedelta(months=rel_delta_months))]
+
+            # Check if X_test is empty
+            if X_test.empty:
+                # Update the start date to the split date for the next iteration and continue with the next iteration
+                start_date = split_date
+                continue
+
+            if not elm:
+                # Create an instance of the RandomForestClassifier class with the current random seed
+                model = RandomForestClassifier(random_state=seed)
+
+                # Fit the model to the training data
+                model.fit(X_train, y_train)
+
+                # Predict the probabilities for the testing data
+                y_pred_proba = model.predict_proba(X_test)
+
+                # Convert y_pred_proba to a DataFrame
+                new_predictions = pd.DataFrame(y_pred_proba, columns=model.classes_, index=X_test.index)
+
+            else:
+                # Create one-hot encoded y_train
+                y_train_one_hot = one_hot_encoding(y_train, 4)
+
+                # Determine input size
+                input_size = X_train.shape[1]
+
+                # Randomly generate weights and biases
+                input_weights = np.random.normal(size=[input_size, hidden_size])
+                biases = np.random.normal(size=[hidden_size])
+
+                # Calculate output weights based on the Moore-Penrose pseudo-inverse
+                output_weights = np.dot(pinv(hidden_nodes(X_train, input_weights, biases)), y_train_one_hot)
+
+                # Generate new predictions with softmax transformation for multi-class classification
+                new_predictions = predict(X_test, input_weights, biases, output_weights)
+
+            # Append the new predictions to the predictions DataFrame
+            predictions_df = pd.concat([predictions_df, pd.DataFrame(new_predictions, index=X_test.index)])
+
+            # Update the start date to the split date for the next iteration
+            start_date = split_date
+
+        # Append the predictions DataFrame to the list
+        dfs.append(predictions_df)
+
+    return dfs
+
+
+# Run the model
+dfs = meta_model(random_seeds, elm=True)
+
+# Concatenate all the prediction dataframes along the column axis
+all_predictions = pd.concat(dfs, axis=1)
+
+# Calculate the mean predicted probability for each class over all runs
+mean_predictions = all_predictions.groupby(level=0, axis=1).mean()
+
+# Filter the 'result' DataFrame for dates after '2019-01-01'
+test_df = result[result.index >= '2019-01-01']
+
+# Reindex mean_predictions to match the index of test_df
+mean_predictions = mean_predictions.reindex(test_df.index)
+
+# Merge the predictions with the test DataFrame
+test_df = test_df.merge(mean_predictions, left_index=True, right_index=True)
 
 # Convert y_pred_proba to a DataFrame
-proba_df = pd.DataFrame(y_pred_proba, columns=model.classes_, index=X_test.index)
+proba_df = test_df[[0, 1, 2, 3]]
 
-# Create test_df that contains the true outcome and the predicted outcome
-test_df = result[result.index >= split_date]
+# Create 'PRED' feature with the class with the highest probability
+test_df['PRED'] = proba_df.idxmax(axis=1)
 
-# Generate predictions
-test_df['PRED'] = model.predict(X_test)
-
-# For each row, sort the probabilities in descending order and get the index of the second highest probability
+# Create 'PRED2' feature with the class with the second highest probability
 test_df['PRED2'] = proba_df.apply(lambda row: row.nlargest(2).idxmin(), axis=1)
 
 # Evaluate for how many rows the result is equal to either 'PRED' or 'PRED2'
@@ -185,64 +301,48 @@ print(f"Proportion of naive correct predictions (considering best two): {prop_ma
 print("Model alpha (best two):", round((prop_correct_double/prop_max_class_naive_double - 1) * 100, 1), '%\n')
 
 # Distribution of outcomes in train- and test set
-print("Train counts:", y_train.value_counts(), '\n')
-print("Test counts:", y_test.value_counts(), '\n')
+print("Train counts:", result[result.index < '2019-01-01']['BEST'].value_counts(), '\n')
+print("Test counts:", result[result.index >= '2019-01-01']['BEST'].value_counts(), '\n')
+
 
 # Analysis for high probability predictions
-# Calculate the upper quartile of the predicted probabilities for class '1'
-upper_quartile = proba_df[1].quantile(0.8)
+def evaluate_high_confidence_predictions(class_num, quantile=0.75, prob=proba_df, test=test_df):
 
-# Filter proba_df for rows where the predicted probability for class '1' is more than the upper quartile
-filtered_proba_df = proba_df[proba_df[1] > upper_quartile]
+    # Calculate the upper quartile of the predicted probabilities for the given class
+    upper_quartile = prob[class_num].quantile(quantile)
 
-# Compare the predicted class for these rows with the actual class in test_df and count how many are correct
-high_conf_lg = (test_df.loc[filtered_proba_df.index, 'BEST'] == test_df.loc[filtered_proba_df.index, 'PRED']).sum()
+    # Filter prob for rows where the predicted probability for the given class is more than the upper quartile
+    filtered_prob = prob[prob[class_num] > upper_quartile]
 
-# Check proportion of correct high conf predictions
-print(f"Number of correct predictions (80th percentile; Large Cap Growth): "
-      f"{round(high_conf_lg / len(filtered_proba_df), 3)}")
+    # From these rows, select where the predicted probability for the given class is the maximum across all classes
+    filtered_prob = filtered_prob[filtered_prob.idxmax(axis=1) == class_num]
 
-# Model alpha
-print("Model alpha (80th percentile; Large Cap Growth): ", round((high_conf_lg / len(filtered_proba_df) /
-                                                                  prop_max_class_naive_single - 1) * 100, 1), '%\n')
+    # Compare the predicted class for these rows with the actual class in test and count how many are correct
+    high_conf = (test.loc[filtered_prob.index, 'BEST'] == test.loc[filtered_prob.index, 'PRED']).sum()
 
+    # Check proportion of correct high conf predictions
+    print(f"Number of correct predictions ({quantile*100}th percentile; Class {class_num}): "
+          f"{round(high_conf / len(filtered_prob), 3)}")
 
-# Calculate the upper quartile of the predicted probabilities for class '1'
-upper_quartile = proba_df[2].quantile(0.8)
+    # Calculate prop correct with the naive approach
+    prop_max_class_naive = round(len(test_df[(test_df['BEST'] == class_num)]) / len(test_df), 3)
 
-# Filter proba_df for rows where the predicted probability for class '1' is more than the upper quartile
-filtered_proba_df = proba_df[proba_df[2] > upper_quartile]
-
-# Compare the predicted class for these rows with the actual class in test_df and count how many are correct
-high_conf_lg = (test_df.loc[filtered_proba_df.index, 'BEST'] == test_df.loc[filtered_proba_df.index, 'PRED']).sum()
-
-# Check proportion of correct high conf predictions
-print(f"Number of correct predictions (80th percentile; Small Cap Value): "
-      f"{round(high_conf_lg / len(filtered_proba_df), 3)}")
-
-# Model alpha
-print("Model alpha (80th percentile; Small Cap Value): ", round((high_conf_lg / len(filtered_proba_df) /
-                                                                 prop_max_class_naive_single - 1) * 100, 1), '%\n')
+    # Model alpha
+    print(f"Model alpha ({quantile*100}th percentile; Class {class_num}): ", round((high_conf / len(filtered_prob) /
+                                                                                    prop_max_class_naive - 1) * 100, 1),
+          '%\n')
 
 
-# Calculate the upper quartile of the predicted probabilities for class '1'
-upper_quartile = proba_df[3].quantile(0.8)
+for class_num in [1, 2, 3, 0]:
+    evaluate_high_confidence_predictions(class_num, 0.7)
 
-# Filter proba_df for rows where the predicted probability for class '1' is more than the upper quartile
-filtered_proba_df = proba_df[proba_df[3] > upper_quartile]
+# Create a cross-tabulation of the actual and predicted classes
+ct = pd.crosstab(test_df['BEST'], test_df['PRED'], rownames=['Actual'], colnames=['Predicted'])
 
-# Compare the predicted class for these rows with the actual class in test_df and count how many are correct
-high_conf_lg = (test_df.loc[filtered_proba_df.index, 'BEST'] == test_df.loc[filtered_proba_df.index, 'PRED']).sum()
+# Print the cross-tabulation
+print(ct)
 
-# Check proportion of correct high conf predictions
-print(f"Number of correct predictions (80th percentile; Small Cap Growth): "
-      f"{round(high_conf_lg / len(filtered_proba_df), 3)}")
+# log_file.close()
+# sys.stdout = sys.__stdout__
 
-# Model alpha
-print("Model alpha (80th percentile; Small Cap Growth): ", round((high_conf_lg / len(filtered_proba_df) /
-                                                                  prop_max_class_naive_single - 1) * 100, 1), '%\n')
-
-log_file.close()
-sys.stdout = sys.__stdout__
-
-# TODO: Set in functions
+# TODO: Create heatmap of crosstab predictions
