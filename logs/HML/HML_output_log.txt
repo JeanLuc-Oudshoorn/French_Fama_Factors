@@ -1,61 +1,61 @@
-Ratio positives (full period): 0.493 
+Ratio positives (full period): 0.496 
 
-Ratio positives (train period): 0.504
-Ratio positives (test period): 0.478 
+Ratio positives (train period): 0.458
+Ratio positives (test period): 0.546 
 
 FULL PERIOD:
-Real Clas. Model Acc.: 0.555
-Real Clas. Model Bal. Acc.: 0.553
-Real Clas. Model Roc-Auc: 0.553
-Real Clas. Model Prec.: 0.537 
+Real Clas. Model Acc.: 0.55
+Real Clas. Model Bal. Acc.: 0.568
+Real Clas. Model Roc-Auc: 0.568
+Real Clas. Model Prec.: 0.651 
 
 PERIOD 2014-01-01 - 2015-01-01:
-Real Clas. Model Bal. Acc.: 0.571 
+Real Clas. Model Bal. Acc.: 0.531 
 
 PERIOD 2015-01-01 - 2016-01-01:
-Real Clas. Model Bal. Acc.: 0.525 
+Real Clas. Model Bal. Acc.: 0.528 
 
 PERIOD 2016-01-01 - 2017-01-01:
-Real Clas. Model Bal. Acc.: 0.466 
+Real Clas. Model Bal. Acc.: 0.539 
 
 PERIOD 2017-01-01 - 2018-01-01:
-Real Clas. Model Bal. Acc.: 0.547 
+Real Clas. Model Bal. Acc.: 0.682 
 
 PERIOD 2018-01-01 - 2019-01-01:
-Real Clas. Model Bal. Acc.: 0.619 
+Real Clas. Model Bal. Acc.: 0.69 
 
 PERIOD 2019-01-01 - 2020-01-01:
-Real Clas. Model Bal. Acc.: 0.607 
+Real Clas. Model Bal. Acc.: 0.49 
 
 PERIOD 2020-01-01 - 2021-01-01:
-Real Clas. Model Bal. Acc.: 0.612 
+Real Clas. Model Bal. Acc.: 0.621 
 
 PERIOD 2021-01-01 - 2022-01-01:
-Real Clas. Model Bal. Acc.: 0.473 
+Real Clas. Model Bal. Acc.: 0.442 
 
 PERIOD 2022-01-01 - 2023-01-01:
-Real Clas. Model Bal. Acc.: 0.521 
+Real Clas. Model Bal. Acc.: 0.58 
 
 PERIOD 2023-01-01 - 2024-01-01:
-Real Clas. Model Bal. Acc.: 0.511 
+Real Clas. Model Bal. Acc.: 0.558 
 
-Num observations with probability >= 53%: 140
-Accuracy for predictions with probability >= 53%: 0.5429 
+Num observations with probability >= 53%: 100
+Accuracy for predictions with probability >= 53%: 0.6500 
 
-Num observations with probability >= 55%: 78
-Accuracy for predictions with probability >= 55%: 0.5897 
+Num observations with probability >= 55%: 80
+Accuracy for predictions with probability >= 55%: 0.6625 
 
-Num observations with probability >= 57%: 44
-Accuracy for predictions with probability >= 57%: 0.5909 
+Num observations with probability >= 57%: 58
+Accuracy for predictions with probability >= 57%: 0.7069 
 
-Num observations with probability <= 47%: 193
-Accuracy for predictions with probability <= 47%: 0.6062 
+Num observations with probability <= 47%: 279
+Accuracy for predictions with probability <= 47%: 0.4910 
 
-Num observations with probability <= 45%: 141
-Accuracy for predictions with probability <= 45%: 0.5957 
+Num observations with probability <= 45%: 212
+Accuracy for predictions with probability <= 45%: 0.4670 
 
-Num observations with probability <= 43%: 90
-Accuracy for predictions with probability <= 43%: 0.6333 
+Num observations with probability <= 43%: 148
+Accuracy for predictions with probability <= 43%: 0.4662 
 
-Mean One-week forward probability: 0.467 
+Mean One-week forward probability: 0.417 
 

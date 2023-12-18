@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.utils import resample
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from scipy.linalg import pinv
+from scipy.stats import chi2_contingency
+import seaborn as sns
+import matplotlib.pyplot as plt
 import warnings
 import subprocess
 import yfinance as yf
@@ -43,12 +47,12 @@ df_stocks = pd.concat(dfs_stocks.values(), axis=1, keys=dfs_stocks.keys())
 # Assign column names
 df_stocks.columns = ['Large Cap Value', 'Large Cap Growth', 'Small Cap Value', 'Small Cap Growth']
 
-# # Define the path to the log file
-# log_path = 'logs/Financial_meta_model_log.txt'
-#
-# # Open the log file in write mode
-# log_file = open(log_path, "w")
-# sys.stdout = log_file
+# Define the path to the log file
+log_path = 'logs/Financial_meta_model_log.txt'
+
+# Open the log file in write mode
+log_file = open(log_path, "w")
+sys.stdout = log_file
 
 # Get the names of all files and directories in the 'results' directory
 all_names = os.listdir('results')
@@ -74,6 +78,7 @@ for model in model_names:
     if last_modified_date.date() < last_friday.date():
         warnings.warn(f"The file '{file_path}' was created before the most recent Friday.")
 
+        # TODO: Uncomment the subprocess once ready
         # # Construct the path to the script
         # script_path = os.path.join('scripts', model, f'{model}_ensemble.py')
         #
@@ -142,7 +147,7 @@ y = result['BEST']
 rel_delta_months = 2
 
 # Define a list of random seeds
-random_seeds = np.arange(0, 20)
+random_seeds = np.arange(0, 30)
 
 
 # ELM Functions
@@ -248,7 +253,7 @@ def meta_model(random_seeds, elm, hidden_size=60):
 
 
 # Run the model
-dfs = meta_model(random_seeds, elm=True)
+dfs = meta_model(random_seeds, elm=False)
 
 # Concatenate all the prediction dataframes along the column axis
 all_predictions = pd.concat(dfs, axis=1)
@@ -333,8 +338,9 @@ def evaluate_high_confidence_predictions(class_num, quantile=0.75, prob=proba_df
           '%\n')
 
 
-for class_num in [1, 2, 3, 0]:
-    evaluate_high_confidence_predictions(class_num, 0.7)
+for class_num in [0, 1, 2, 3]:
+    evaluate_high_confidence_predictions(class_num, 0.67)
+    evaluate_high_confidence_predictions(class_num, 0.8)
 
 # Create a cross-tabulation of the actual and predicted classes
 ct = pd.crosstab(test_df['BEST'], test_df['PRED'], rownames=['Actual'], colnames=['Predicted'])
@@ -342,7 +348,35 @@ ct = pd.crosstab(test_df['BEST'], test_df['PRED'], rownames=['Actual'], colnames
 # Print the cross-tabulation
 print(ct)
 
-# log_file.close()
-# sys.stdout = sys.__stdout__
+# Create a list of class names
+class_names = ['Large Cap Value', 'Large Cap Growth', 'Small Cap Value', 'Small Cap Growth']
 
-# TODO: Create heatmap of crosstab predictions
+# Normalize the cross-tabulation over the rows
+ct_normalized = ct.div(ct.sum(axis=0), axis=1)
+
+# Create a heatmap of the cross-tabulation
+plt.figure(figsize=(10, 7))
+sns.heatmap(ct_normalized, cmap='inferno', annot=True, fmt='.2f',
+            xticklabels=class_names, yticklabels=class_names)
+
+# Add a title to the heatmap
+plt.title('Heatmap of Actual vs Predicted Classes')
+
+# Save the figure to the figures folder
+plt.savefig('figures/metamodel_heatmap.png')
+
+# Display the plot
+plt.show()
+
+# Perform the Chi-square test of independence
+chi2, p, dof, expected = chi2_contingency(ct)
+
+print(f"Chi-square statistic: {np.round(chi2, 1)}")
+print(f"p-value: {np.round(p, 3)}")
+print(f"Degrees of freedom: {dof}")
+print(f"Expected contingency table: \n{np.round(expected, 1)}")
+
+log_file.close()
+sys.stdout = sys.__stdout__
+
+# TODO: Combine RF and ELM for more robust results

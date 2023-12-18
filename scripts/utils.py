@@ -65,7 +65,7 @@ def build_custom_random_config():
     sentiment_options = ['BULLISH', 'NEUTRAL', 'BEARISH']
 
     # Generate random configurations
-    extra_features_list = ['WOY'] + list(np.random.choice(features_options, np.random.randint(1, 7),
+    extra_features_list = ['WOY'] + list(np.random.choice(features_options, np.random.randint(2, 7),
                                                                  replace=False))
     extra_features_list = random.choice([extra_features_list, extra_features_list[1:], extra_features_list[2:]])
     columns_to_drop = ['Nasdaq', 'SP500', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(1, 7), replace=False))
@@ -198,3 +198,7 @@ def visual_results_analysis(name, runs, num_rounds=30, save=True):
 
             plt.savefig(f'../../figures/{name}/{name}_result_{run}.png')
         plt.show()
+
+# TODO: Bayesian probability analysis
+
+# TODO: Invest after drawdown analysis

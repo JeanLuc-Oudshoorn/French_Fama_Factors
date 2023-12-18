@@ -10,7 +10,7 @@ warnings.filterwarnings("ignore")
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Initialize the class with required arguments
-model = WeeklyFinancialForecastingModel(log_path='logs/HML/HML_output_log_search.txt',
+model = WeeklyFinancialForecastingModel(log_path='logs/HML/HML_output_log.txt',
                                         stocks_list=['IWD', 'IWF', 'IWN', 'IWO', 'QQQ', '^GSPC', '^VIX', 'ES=F'],
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',

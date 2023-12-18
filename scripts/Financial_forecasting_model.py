@@ -261,13 +261,8 @@ class WeeklyFinancialForecastingModel:
         return self.data
 
     def create_features(self, extra_features_list: list, features_no_ma: list, ma_timespans: list,
-                        momentum_diff_list: list, rsi_window=14, apo_fast=12, apo_slow=26,
-                        cg_length=10, stdev_length=30, skew_length=30, zscore_length=30,
-                        er_length=10, dema_length=10, kurt_length=30, cfo_length=9):
-
-        # TODO: Percent diff between futures and current level
-
-        # TODO: Atlanta Fed GDP Now estimates? https://www.frbatlanta.org/cqer/research/gdpnow.aspx
+                        momentum_diff_list: list, rsi_window=14, apo_fast=12, apo_slow=26, stats_length=30,
+                        mom_length=10):
 
         # Add combinations of other features in the dataset
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
@@ -315,25 +310,31 @@ class WeeklyFinancialForecastingModel:
             raise ValueError('Invalid series_diff value! Must be 1, 2 or 4.')
 
         # Add data
-        if 'FUT' in extra_features_list:
-            perc_diff_fut = (self.daily_data['ES=F'] - self.daily_data['^GSPC']) / self.daily_data['^GSPC'] * 100
+        def add_futures_data(fut='ES=F', idx='^GSPC', var_name='FUT'):
+            perc_diff_fut = (self.daily_data[fut] - self.daily_data[idx]) / self.daily_data[idx] * 100
             # Convert perc_diff to a DataFrame and reset its index
             perc_diff_df = perc_diff_fut.to_frame().reset_index()
-            perc_diff_df.columns = ['DATE', 'FUT']
+            perc_diff_df.columns = [self.date_name, var_name]
 
             # Create a DataFrame that contains all dates
             all_dates_df = pd.DataFrame(pd.date_range(start=self.daily_data.index.min(),
                                                       end=self.daily_data.index.max()),
-                                        columns=['DATE'])
+                                        columns=[self.date_name])
 
             # Merge perc_diff_df with all_dates_df
-            perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on='DATE', how='left')
+            perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on=self.date_name, how='left')
 
             # Fill NaN values with the last observed value
-            perc_diff_df['FUT'].fillna(method='ffill', inplace=True)
+            perc_diff_df[var_name].fillna(method='ffill', inplace=True)
 
             # Merge self.data and perc_diff_df on the date column
             self.data = self.data.merge(perc_diff_df, how='left', on='DATE')
+
+        if 'FUT' in extra_features_list:
+            add_futures_data()
+
+        if 'NSDQFUT' in extra_features_list:
+            add_futures_data(fut='NQ=F', idx='^NDX', var_name='NSDQFUT')
 
         # Create a new list that contains the columns to be dropped only if they are not in self.outcome_vars
         columns_to_drop = [col for col in self.columns_to_drop if col not in self.outcome_vars]
@@ -371,39 +372,39 @@ class WeeklyFinancialForecastingModel:
 
         if 'APO' in extra_features_list:
             # Create absolute price oscillator
-            self.data['APO'] = ta.rsi(price_difference, fast=apo_fast, slow=apo_slow)
+            self.data['APO'] = ta.apo(price_difference, fast=apo_fast, slow=apo_slow)
 
         if 'CG' in extra_features_list:
             # Create center of gravity
-            self.data['CG'] = ta.cg(price_difference, length=cg_length)
+            self.data['CG'] = ta.cg(price_difference, length=mom_length)
 
         if 'STDEV' in extra_features_list:
             # Create rolling standard deviation
-            self.data['STDEV'] = ta.stdev(price_difference, length=stdev_length)
+            self.data['STDEV'] = ta.stdev(price_difference, length=stats_length)
 
         if 'SKEW' in extra_features_list:
             # Create rolling standard deviation
-            self.data['SKEW'] = ta.skew(price_difference, length=skew_length)
+            self.data['SKEW'] = ta.skew(price_difference, length=stats_length)
 
         if 'KURT' in extra_features_list:
             # Create rolling kurtosis
-            self.data['KURT'] = ta.kurtosis(price_difference, length=kurt_length)
+            self.data['KURT'] = ta.kurtosis(price_difference, length=stats_length)
 
         if 'ZSCORE' in extra_features_list:
             # Create z-score
-            self.data['ZSCORE'] = ta.zscore(price_difference, length=zscore_length)
+            self.data['ZSCORE'] = ta.zscore(price_difference, length=stats_length)
 
         if 'CFO' in extra_features_list:
             # Create Chande Forecast Oscillator
-            self.data['CFO'] = ta.cfo(price_difference, length=cfo_length)
+            self.data['CFO'] = ta.cfo(price_difference, length=mom_length)
 
         if 'ER' in extra_features_list:
             # Create Efficiency ratio
-            self.data['ER'] = ta.er(price_difference, length=er_length)
+            self.data['ER'] = ta.er(price_difference, length=mom_length)
 
         if 'DEMA' in extra_features_list:
             # Create double exponential moving average
-            self.data['DEMA'] = ta.dema(price_difference, length=dema_length)
+            self.data['DEMA'] = ta.dema(price_difference, length=mom_length)
 
         if 'DRAWD' in extra_features_list:
             # Create drawdown
@@ -720,7 +721,6 @@ class WeeklyFinancialForecastingModel:
                 self.close_log()
                 self.print_balanced_accuracy()
 
-            # TODO: make results a model attribute
             # Store the bal_acc_list in the results dictionary
             results[str(i)] = bal_acc_list
 
@@ -770,3 +770,5 @@ class WeeklyFinancialForecastingModel:
         self.print_balanced_accuracy()
 
 # TODO: Experiment with testing performance on similar instruments: IWN -> VBR
+
+# TODO: Remember VVIX for a future
