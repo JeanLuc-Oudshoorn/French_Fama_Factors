@@ -450,7 +450,7 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def build_model(self, start_year: int = 2014, end_year: int = 2023, n_estimators: int = 100,
+    def build_model(self, start_year: int = 2014, end_year: int = 2023, n_estimators: int = 100, train_years: int = 20,
                     max_features: float = .4, exclude_base_outcome_var=False, perm_feat=False, multiple_models=False):
         # Define retraining intervals
         date_list = []
@@ -477,7 +477,8 @@ class WeeklyFinancialForecastingModel:
                                             n_estimators=n_estimators)
 
                 # Timesplit train- and test data
-                train = self.data[self.data.index < timesplit]
+                train = self.data[(self.data.index < timesplit) &
+                                  (self.data.index >= pd.to_datetime(timesplit) - pd.Timedelta(days=train_years*365))]
                 test = self.data[(self.data.index >= timesplit) &
                                  (self.data.index <= pd.to_datetime(timesplit) + pd.Timedelta(days=365))]
 
@@ -662,69 +663,96 @@ class WeeklyFinancialForecastingModel:
 
         return bal_acc
 
-    def run_model_with_configs(self, feature_configs: list, early_stopping: bool = True):
+    def run_model_with_configs(self, config: list, period: list):
+
+        # Initialize a list with balanced accuracy values
+        bal_acc_list = []
+
+        # change resampling day
+        self.resampling_day = 'W-Fri'
+        self.columns_to_drop = config['columns_to_drop']
+
+        self.read_data()
+
+        self.fred_series = config['fred_series']
+        self.continuous_series = config['continuous_series']
+
+        # Call the methods
+        self.create_log()
+        self.add_monthly_fred_data()
+        self.add_continuous_data()
+        self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
+                                         sent_cols_to_drop=config['sent_cols_to_drop'])
+        self.add_shiller_cape(config['cape'])
+        self.fill_missing_values()
+        self.define_outcome_var()
+        self.create_features(extra_features_list=config['extra_features_list'],
+                             features_no_ma=self.fred_series + config['continuous_no_ma'],
+                             momentum_diff_list=config['momentum_diff_list'],
+                             ma_timespans=config['ma_timespans'])
+        self.build_model(start_year=period[0], end_year=period[1],
+                         train_years=6,
+                         n_estimators=config['n_estimators'],
+                         max_features=config['max_features'],
+                         exclude_base_outcome_var=config['exclude_base_outcome'],
+                         perm_feat=False,
+                         multiple_models=True)
+
+        self.final_evaluation(bal_acc_list=bal_acc_list,
+                              perform_sensitivity_test=False)
+        self.close_log()
+        self.print_balanced_accuracy()
+
+        return bal_acc_list
+
+    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3,
+                                   validation_start_year: int = 2014, end_year: int = 2023):
 
         # Initialize a dictionary to store the results
         results = {}
 
-        # Loop over the different sets of features
-        for i, config in enumerate(feature_configs):
-            print(f" **** NEW FEATURE CONFIG: {i} **** \n")
+        # Create a function for rolling validation sets
+        def create_validation_periods(validation_start_year: int, end_year: int):
+            validation_periods = []
 
-            # Initialize a list with balanced accuracy values
-            bal_acc_list = []
+            for year in range(validation_start_year, end_year, 3):
+                validation_start = year
+                validation_end = year + 3
 
-            for resampling_day in ['W-Mon', 'W-Tue', 'W-Wed', 'W-Thu', 'W-Fri', 'W-Sat']:
-                print("Resampling day:", resampling_day)
+                if validation_end > end_year:
+                    validation_end = end_year
 
-                # Exit config if accuracy is too low
-                if early_stopping:
-                    if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.493) or \
-                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.502) or \
-                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.505):
+                validation_periods.append([validation_start, validation_end])
 
-                        print("Exit config due to low accuracy! \n")
-                        results[str(i)] = bal_acc_list
-                        break
+            return validation_periods
 
-                # change resampling day
-                self.resampling_day = resampling_day
-                self.columns_to_drop = config['columns_to_drop']
+        validation_periods = create_validation_periods(validation_start_year, end_year)
 
-                self.read_data()
+        # Loop over the validation periods
+        for period in validation_periods:
 
-                self.fred_series = config['fred_series']
-                self.continuous_series = config['continuous_series']
+            # Loop over the different sets of features
+            for i, config in enumerate(feature_configs):
+                print(f" **** NEW FEATURE CONFIG: {i} **** \n")
 
-                # Call the methods
-                self.create_log()
-                self.add_monthly_fred_data()
-                self.add_continuous_data()
-                self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
-                                                 sent_cols_to_drop=config['sent_cols_to_drop'])
-                self.add_shiller_cape(config['cape'])
-                self.fill_missing_values()
-                self.define_outcome_var()
-                self.create_features(extra_features_list=config['extra_features_list'],
-                                     features_no_ma=self.fred_series + config['continuous_no_ma'],
-                                     momentum_diff_list=config['momentum_diff_list'],
-                                     ma_timespans=config['ma_timespans'])
-                self.build_model(start_year=2014, end_year=2023,
-                                 n_estimators=config['n_estimators'],
-                                 max_features=config['max_features'],
-                                 exclude_base_outcome_var=config['exclude_base_outcome'],
-                                 perm_feat=False,
-                                 multiple_models=True)
+                # Store the bal_acc_list in the results dictionary
+                results[str(i)] = self.run_model_with_configs(config=config, period=period)
 
-                self.final_evaluation(bal_acc_list=bal_acc_list,
-                                      perform_sensitivity_test=False)
-                self.close_log()
-                self.print_balanced_accuracy()
+                # Sort the results dictionary by the mean of the balanced accuracy list in descending order
+                sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
 
-            # Store the bal_acc_list in the results dictionary
-            results[str(i)] = bal_acc_list
+                # Extract the top two configurations
+                top_config = [feature_configs[int(run)] for run, _ in sorted_results[:1]]
 
-        return results
+                # TODO: Increment period by three years for testing, save results somewhere, enter next period
+
+                test_bal_acc = self.run_model_with_configs(config=top_config, period)
+
+
+
+
+
+
 
     def build_model_ensemble(self, feature_configs):
 

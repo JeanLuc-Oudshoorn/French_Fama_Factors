@@ -147,7 +147,7 @@ y = result['BEST']
 rel_delta_months = 2
 
 # Define a list of random seeds
-random_seeds = np.arange(0, 30)
+random_seeds = np.arange(0, 20)
 
 
 # ELM Functions
@@ -181,7 +181,7 @@ def softmax(x):
 
 
 # Loop over the list of random seeds
-def meta_model(random_seeds, elm, hidden_size=60):
+def meta_model(random_seeds, elm, hidden_size=200000):
 
     # Initialize a list to store the prediction dataframes
     dfs = []
@@ -380,3 +380,5 @@ log_file.close()
 sys.stdout = sys.__stdout__
 
 # TODO: Combine RF and ELM for more robust results
+
+# TODO: Test double descent

@@ -62,7 +62,7 @@ def build_custom_random_config():
                        'Large Cap Value', 'Large Cap Growth']
     fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
     continuous_series_options = ['DGS10', 'T10Y2Y', 'USEPUINDXD', 'AAAFF', 'DFF']
-    sentiment_options = ['BULLISH', 'NEUTRAL', 'BEARISH']
+    sentiment_options = ['BULLISH', 'BEARISH']
 
     # Generate random configurations
     extra_features_list = ['WOY'] + list(np.random.choice(features_options, np.random.randint(2, 7),
@@ -180,7 +180,7 @@ def visual_results_analysis(name, runs, num_rounds=30, save=True):
     results_df = pd.DataFrame.from_dict(results, orient='index').T
 
     # Add the day of the week to the dataframe
-    results_df['day'] = [day for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] for _ in range(num_rounds)]
+    results_df['day'] = [day for day in ['Mon', 'Tue', 'Wed', 'Thu'] for _ in range(num_rounds)]
 
     # Plot distribution of the results
     for run in runs:
