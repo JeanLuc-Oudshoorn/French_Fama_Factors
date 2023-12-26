@@ -3,6 +3,8 @@ import numpy as np
 import pickle
 import pandas as pd
 import seaborn as sns
+from scipy.stats import ttest_ind
+from statsmodels.stats.multitest import multipletests
 import matplotlib.pyplot as plt
 import os
 import re
@@ -198,6 +200,21 @@ def visual_results_analysis(name, runs, num_rounds=30, save=True):
 
             plt.savefig(f'../../figures/{name}/{name}_result_{run}.png')
         plt.show()
+
+
+def sequential_t_test(data, window_size):
+    n = len(data)
+    p_values = []
+
+    for i in range(window_size, n):
+        segment1 = data[:i]
+        segment2 = data[i - window_size:i]
+
+        _, p_value = ttest_ind(segment1, segment2)
+        p_values.append(p_value)
+
+    return p_values
+
 
 # TODO: Bayesian probability analysis
 
