@@ -469,13 +469,13 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def build_model(self, start_year: int = 2014, end_year: int = 2023, n_estimators: int = 100, train_years: int = 20,
+    def build_model(self, start_year: int = 2014, end_year: int = 2024, n_estimators: int = 100, train_years: int = 20,
                     max_features: float = .4, exclude_base_outcome_var=False, perm_feat=False, multiple_models=False,
                     recency_weighted=True):
         # Define retraining intervals
         date_list = []
 
-        for year in range(start_year, end_year + 1):
+        for year in range(start_year, end_year):
             for quarter in [1, 4, 7, 10]:
                 new_year = datetime(year, quarter, 1)
                 date_list.append(new_year.strftime('%Y-%m-%d'))
@@ -511,7 +511,7 @@ class WeeklyFinancialForecastingModel:
 
                 # Create option to weight samples by recency
                 if recency_weighted:
-                    sw_train = np.linspace(1, 2, X_train.shape[0])
+                    sw_train = np.linspace(1, 2.5, X_train.shape[0])
                 else:
                     sw_train = np.repeat(1, X_train.shape[0])
 
@@ -578,6 +578,10 @@ class WeeklyFinancialForecastingModel:
         self.data['YEAR'] = self.data.index.year
         mean_outcome_by_year = self.data.groupby('YEAR')['OUTCOME_VAR_1_INDICATOR'].mean()
         print("Ratio positives:", round(mean_outcome_by_year, 3), '\n')
+
+        # Print ratio positives in the test set
+        print("Ratio positives (test set):",
+              round(self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
 
         # Filter the data for current date
         self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
@@ -723,7 +727,7 @@ class WeeklyFinancialForecastingModel:
             self.continuous_series = config['continuous_series']
 
             # Call the methods
-            self.create_log()
+            # self.create_log()
             self.add_monthly_fred_data()
             self.add_continuous_data()
             self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
@@ -746,13 +750,13 @@ class WeeklyFinancialForecastingModel:
         self.final_evaluation(bal_acc_list=bal_acc_list,
                               perform_sensitivity_test=False,
                               multiple_models=multiple_models)
-        self.close_log()
+        # self.close_log()
         self.print_balanced_accuracy()
 
         return bal_acc_list
 
-    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3, train_years: int = 7,
-                                   validation_start_year: int = 2011, end_year: int = 2023):
+    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3, train_years: int = 8,
+                                   validation_start_year: int = 2011, end_year: int = 2024):
 
         # Create a function for rolling validation sets
         def create_validation_periods(validation_start_year: int, end_year: int, validation_years: int):
@@ -776,7 +780,7 @@ class WeeklyFinancialForecastingModel:
 
         # Create balanced accuracy list for test runs and prediction dataframe
         test_bal_acc = {}
-        top_configs = []
+        top_configs, last_configs = [], []
         test_predictions = pd.DataFrame()
 
         # Loop over the validation periods
@@ -802,8 +806,11 @@ class WeeklyFinancialForecastingModel:
             # Sort the results dictionary by the mean of the balanced accuracy list in descending order
             sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
 
-            # Extract the top two configurations
-            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[:2]]
+            if not index == len(validation_periods) - 1:
+                # Extract the top two configurations
+                top_configs = [feature_configs[int(run)] for run, _ in sorted_results[2:4]]
+            else:
+                last_configs = [feature_configs[int(run)] for run, _ in sorted_results[2:4]]
 
             # Increment test period
             test_period = [year + validation_years for year in period]
@@ -838,6 +845,15 @@ class WeeklyFinancialForecastingModel:
         # Final evaluation
         print(f" **** STARTING FINAL EVALUATION **** \n")
 
+        # Count the occurrences of each weekday
+        weekday_counts = self.data.index.weekday.value_counts()
+
+        # Find the most frequent weekday
+        most_frequent_weekday = weekday_counts.idxmax()
+
+        # Filter out rows with a different weekday than the most frequent one
+        self.data = self.data[self.data.index.weekday == most_frequent_weekday]
+
         # Open log file
         self.create_log()
 
@@ -853,7 +869,7 @@ class WeeklyFinancialForecastingModel:
         # Close log file
         self.close_log()
 
-        return top_configs
+        return top_configs, last_configs
 
     def build_model_ensemble(self, feature_configs):
 
@@ -882,7 +898,8 @@ class WeeklyFinancialForecastingModel:
                                  features_no_ma=self.fred_series + config['continuous_no_ma'],
                                  momentum_diff_list=config['momentum_diff_list'],
                                  ma_timespans=config['ma_timespans'])
-            self.build_model(start_year=2014, end_year=2023,
+            self.build_model(start_year=2023, end_year=2024,
+                             train_years=8,
                              n_estimators=config['n_estimators'],
                              max_features=config['max_features'],
                              exclude_base_outcome_var=config['exclude_base_outcome'],
