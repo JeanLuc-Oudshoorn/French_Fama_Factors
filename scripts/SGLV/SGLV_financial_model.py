@@ -7,7 +7,7 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_custom_random_config() for _ in range(50)]
+random_configs = [build_custom_random_config() for _ in range(40)]
 
 # Add the best configurations from the SGLV model
 feature_configs = random_configs
@@ -31,7 +31,7 @@ model = WeeklyFinancialForecastingModel(log_path='logs/SGLV/SGLV_output_log_sear
                                         fred_series=[],
                                         continuous_series=[],
                                         num_rounds=20,
-                                        test_start_date='2014-01-01',
+                                        test_start_date='2011-01-01',
                                         output_path='results/SGLV/SGLV_output.csv')
 
 # Run the model with the different feature configurations

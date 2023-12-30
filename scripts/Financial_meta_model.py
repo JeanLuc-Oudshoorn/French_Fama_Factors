@@ -68,6 +68,7 @@ last_friday = today - timedelta(days=(today.weekday() - 4) % 7)
 for model in model_names:
     # Construct the path to the '_output.csv' file
     file_path = os.path.join('results', model, f'{model}_output.csv')
+
     # Get the last modified time of the file
     last_modified_time = os.path.getmtime(file_path)
 
@@ -78,12 +79,11 @@ for model in model_names:
     if last_modified_date.date() < last_friday.date():
         warnings.warn(f"The file '{file_path}' was created before the most recent Friday.")
 
-        # TODO: Uncomment the subprocess once ready
-        # # Construct the path to the script
-        # script_path = os.path.join('scripts', model, f'{model}_ensemble.py')
-        #
-        # # Run the script
-        # subprocess.run(['python', script_path])
+        # Construct the path to the script
+        script_path = os.path.join('scripts', model, f'{model}_ensemble.py')
+
+        # Run the script
+        subprocess.run(['python', script_path])
 
     # Print the most recent running date for the script
     print(f"The most recent running date for the script '{model}' is {last_modified_date.date()}.")
@@ -253,7 +253,7 @@ def meta_model(random_seeds, elm, hidden_size=200000):
 
 
 # Run the model
-dfs = meta_model(random_seeds, elm=False)
+dfs = meta_model(random_seeds, elm=True)
 
 # Concatenate all the prediction dataframes along the column axis
 all_predictions = pd.concat(dfs, axis=1)
