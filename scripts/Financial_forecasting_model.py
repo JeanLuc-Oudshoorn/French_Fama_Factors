@@ -4,7 +4,6 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, roc_auc_score, precision_score, balanced_accuracy_score)
 from sklearn.inspection import permutation_importance
-from datetime import timedelta
 import pandas_datareader.data as web
 import yfinance as yf
 import sys
@@ -485,10 +484,6 @@ class WeeklyFinancialForecastingModel:
                 new_period = datetime(year, quarter, 1)
                 date_list.append(new_period.strftime('%Y-%m-%d'))
 
-        # Adding a new_period that is one week before self.current_date
-        one_week_before_current = self.current_date - timedelta(days=7)
-        date_list.append(one_week_before_current.strftime('%Y-%m-%d'))
-
         # Remove all future entries from date list
         date_list = [date for date in date_list if date <= str(self.current_date)]
 
@@ -520,6 +515,10 @@ class WeeklyFinancialForecastingModel:
                 X_test = test[pred_vars].values
                 y_train = train['OUTCOME_VAR_1_INDICATOR'].values
                 y_test = test['OUTCOME_VAR_1_INDICATOR'].values
+
+                # Skip to next iteration if X_test is empty
+                if X_test.empty:
+                    continue
 
                 # Create option to weight samples by recency
                 if recency_weighted:
@@ -767,6 +766,7 @@ class WeeklyFinancialForecastingModel:
                              max_features=config['max_features'],
                              exclude_base_outcome_var=config['exclude_base_outcome'],
                              perm_feat=False,
+                             recency_weighted=False,
                              multiple_models=mult_boolean)
 
         self.final_evaluation(bal_acc_list=bal_acc_list,
@@ -796,7 +796,7 @@ class WeeklyFinancialForecastingModel:
 
         return validation_periods
 
-    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3, train_years: int = 8,
+    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3, train_years: int = 20,
                                    validation_start_year: int = 2011, end_year: int = 2024):
 
         # Initiate validation periods
@@ -914,7 +914,7 @@ class WeeklyFinancialForecastingModel:
                                  momentum_diff_list=config['momentum_diff_list'],
                                  ma_timespans=config['ma_timespans'])
             self.build_model(start_year=2023, end_year=2026,
-                             train_years=8,
+                             train_years=20,
                              n_estimators=config['n_estimators'],
                              max_features=config['max_features'],
                              exclude_base_outcome_var=config['exclude_base_outcome'],
@@ -929,3 +929,5 @@ class WeeklyFinancialForecastingModel:
                               bal_acc_list=[])
         self.close_log()
         self.print_balanced_accuracy()
+
+# TODO: Make train years and validation splits model attributes

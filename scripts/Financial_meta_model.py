@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.utils import resample
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from scipy.linalg import pinv
