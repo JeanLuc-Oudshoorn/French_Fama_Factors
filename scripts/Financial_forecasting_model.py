@@ -197,19 +197,39 @@ class WeeklyFinancialForecastingModel:
             cape_data.drop(columns=['Date'], inplace=True)
 
             # TODO: Check when the data is released and add the appropriate number of days
-            # Add 5 days to the 'DATE' feature to account for info release date
-            cape_data[self.date_name] = cape_data[self.date_name] + pd.Timedelta(days=4)
+            # TODO: Switch to other Shiller PE source
+            # Add 4 days to the 'DATE' feature to account for info release date
+            cape_data[self.date_name] = cape_data[self.date_name] + pd.Timedelta(days=1)
             cape_data = cape_data[cape_data[self.date_name] <= self.current_date]
 
             # Set index and resample
             cape_data.set_index(self.date_name, inplace=True)
-            resampled = cape_data.resample(self.resampling_day).first().reset_index()
+            expanded_cape_data = cape_data.resample('D').first().reset_index()
 
-            # Perform merge
-            self.data = self.data.merge(resampled, how='outer', on=self.date_name)
+            # Resample to get every day
+            expanded_cape_data = pd.merge(expanded_cape_data, self.daily_data, left_on='DATE',
+                                          right_on=self.daily_data.index, how='outer')
 
-        return self.data
+            # Find days with missing values
+            mask = expanded_cape_data['CAPE'].isna()
 
+            # Forward fill daily S&P500 Close and CAPE
+            columns_to_fill = ['^GSPC', 'CAPE']
+            for column in columns_to_fill:
+                expanded_cape_data[column].fillna(method='ffill', inplace=True)
+
+            # Calculate S&P500 cumulative returns per month
+            expanded_cape_data['log_returns'] = np.log(1 + expanded_cape_data['^GSPC'].pct_change())
+            expanded_cape_data['cumulative_returns'] = \
+            expanded_cape_data.groupby(expanded_cape_data['DATE'].dt.to_period('M'))['log_returns'] \
+                .transform(lambda x: x.cumsum())
+
+            # Multiply the previously missing values with cumulative returns
+            expanded_cape_data.loc[mask, 'CAPE'] = expanded_cape_data.loc[mask, 'CAPE'] * (
+                    1 + expanded_cape_data.loc[mask, 'cumulative_returns'])
+
+            # Merge back to original data
+            self.data = pd.merge(self.data, expanded_cape_data[['DATE', 'CAPE']], on=self.date_name, how='left')
 
     def fill_missing_values(self):
         # Set index
@@ -450,14 +470,23 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def build_model(self, start_year: int = 2014, end_year: int = 2023, n_estimators: int = 100,
-                    max_features: float = .4, exclude_base_outcome_var=False, perm_feat=False, multiple_models=False):
+    def build_model(self, start_year: int = 2014, end_year: int = 2024, n_estimators: int = 100, train_years: int = 20,
+                    max_features: float = .4, exclude_base_outcome_var=False, perm_feat=False, multiple_models=False,
+                    recency_weighted=True):
+
+        # Drop columns resulting from setting the index if they haven't been already
+        self.data = self.data.drop(['level_0', 'index'], axis=1, errors='ignore')
+
         # Define retraining intervals
         date_list = []
 
-        for year in range(start_year, end_year + 1):
-            new_year = datetime(year, 1, 1)
-            date_list.append(new_year.strftime('%Y-%m-%d'))
+        for year in range(start_year, end_year):
+            for quarter in [1, 4, 7, 10]:
+                new_period = datetime(year, quarter, 1)
+                date_list.append(new_period.strftime('%Y-%m-%d'))
+
+        # Remove all future entries from date list
+        date_list = [date for date in date_list if date <= str(self.current_date)]
 
         # Define dummy variables
         pred_vars = [var for var in self.data.columns if var not in
@@ -467,8 +496,8 @@ class WeeklyFinancialForecastingModel:
             pred_vars = pred_vars + ['OUTCOME_VAR']
 
         # Number of seeds to evaluate
-        for seed in range(self.num_rounds):
-            for i, timesplit in enumerate(date_list):
+        for i, timesplit in enumerate(date_list):
+            for seed in range(self.num_rounds):
 
                 # Initialize basic model
                 rf = RandomForestClassifier(random_state=seed,
@@ -477,10 +506,14 @@ class WeeklyFinancialForecastingModel:
                                             n_estimators=n_estimators)
 
                 # Timesplit train- and test data
-                train = self.data[self.data.index < timesplit]
+                train = self.data[(self.data.index < timesplit) &
+                                  (self.data.index >= pd.to_datetime(timesplit) - pd.DateOffset(years=train_years))]
                 test = self.data[(self.data.index >= timesplit) &
-                                 (self.data.index <= pd.to_datetime(timesplit) + pd.Timedelta(days=365))]
+                                 (self.data.index <= pd.to_datetime(timesplit) + pd.DateOffset(months=3))]
 
+                # Skip to next iteration if X_test is empty
+                if test.empty:
+                    continue
 
                 # Split into X and Y
                 X_train = train[pred_vars].values
@@ -488,8 +521,14 @@ class WeeklyFinancialForecastingModel:
                 y_train = train['OUTCOME_VAR_1_INDICATOR'].values
                 y_test = test['OUTCOME_VAR_1_INDICATOR'].values
 
+                # Create option to weight samples by recency
+                if recency_weighted:
+                    sw_train = np.linspace(1, 2, X_train.shape[0])
+                else:
+                    sw_train = np.repeat(1, X_train.shape[0])
+
                 # Train the model
-                rf.fit(X_train, y_train)
+                rf.fit(X_train, y_train, sample_weight=sw_train)
 
                 # Predict on test data
                 y_pred = rf.predict(X_test)
@@ -497,10 +536,10 @@ class WeeklyFinancialForecastingModel:
 
                 # Add predictions to dataframe for each seed
                 self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                 pd.Timedelta(days=365)), f'REAL_PRED_CLS_{seed}'] = y_pred
+                                                 pd.DateOffset(months=3)), f'REAL_PRED_CLS_{seed}'] = y_pred
 
                 self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                 pd.Timedelta(days=365)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
+                                                 pd.DateOffset(months=3)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
                     y_pred_proba[:, 1]
 
                 # Calculate feature importance for last seed to evaluate
@@ -533,6 +572,10 @@ class WeeklyFinancialForecastingModel:
         if multiple_models:
             self.data = pd.concat([self.intermediate_data, self.data], axis=1)
 
+        # If the date column is not the index yet, set it
+        if not self.data.index.name == self.date_name:
+            self.data.set_index(self.date_name, inplace=True)
+
         # Define the pattern
         pattern = r'REAL_PRED_PROBA_CLS_\d{1,2}'
 
@@ -543,18 +586,28 @@ class WeeklyFinancialForecastingModel:
         self.data['MEAN_PRED_PROBA'] = self.data[selected_columns].mean(axis=1)
         self.data['MEAN_PRED_CLS'] = np.where(self.data['MEAN_PRED_PROBA'] >= 0.5, 1, 0)
 
-        # Print full period ratio positives
-        print("Ratio positives (full period):", round(self.data['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
-        print("Ratio positives (train period):", round(self.data[self.data.index < self.test_start_date]
-                                                       ['OUTCOME_VAR_1_INDICATOR'].mean(), 3))
+        # Print ratio of positives by year
+        self.data['YEAR'] = self.data.index.year
+        mean_outcome_by_year = self.data.groupby('YEAR')['OUTCOME_VAR_1_INDICATOR'].mean()
+        print("Ratio positives:", round(mean_outcome_by_year, 3), '\n')
+
+        # Print ratio positives in the test set
+        print("Ratio positives (test set):",
+              round(self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
 
         # Filter the data for current date
         self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
                                                                                    'MEAN_PRED_CLS',
                                                                                    'MEAN_PRED_PROBA'])
 
-        # Print test period ratio positives
-        print("Ratio positives (test period):", round(self.data['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
+        # Count the occurrences of each weekday
+        weekday_counts = self.data.index.weekday.value_counts()
+
+        # Find the most frequent weekday
+        most_frequent_weekday = weekday_counts.idxmax()
+
+        # Filter out rows with a different weekday than the most frequent one
+        self.data = self.data[self.data.index.weekday == most_frequent_weekday]
 
         # Evaluate full predictions
         y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
@@ -633,8 +686,17 @@ class WeeklyFinancialForecastingModel:
             for seed in range(self.num_rounds):
                 # Evaluate one-year ahead predictions
                 y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
-                y_pred = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_CLS_{seed}']
 
+                if multiple_models:
+                    row_mean = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_PROBA_CLS_{seed}']\
+                        .mean(axis=1)
+
+                    # Determine y_pred
+                    y_pred = np.where(row_mean >= 0.5, 1, 0)
+                else:
+                    y_pred = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_CLS_{seed}']
+
+                # Calculate balanced accuracy
                 bal_acc = balanced_accuracy_score(y_test, y_pred)
 
                 # Print results
@@ -662,71 +724,172 @@ class WeeklyFinancialForecastingModel:
 
         return bal_acc
 
-    def run_model_with_configs(self, feature_configs: list, early_stopping: bool = True):
+    def run_model_with_configs(self, feature_configs: list, period: list, train_years: int, multiple_models: bool):
 
-        # Initialize a dictionary to store the results
-        results = {}
+        # Initialize a list with balanced accuracy values
+        bal_acc_list = []
 
-        # Loop over the different sets of features
+        if not isinstance(feature_configs, list):
+            feature_configs = [feature_configs]
+
         for i, config in enumerate(feature_configs):
-            print(f" **** NEW FEATURE CONFIG: {i} **** \n")
+            if i == 0 and multiple_models:
+                mult_boolean = True
+            else:
+                mult_boolean = False
 
-            # Initialize a list with balanced accuracy values
-            bal_acc_list = []
+            # change resampling day
+            self.resampling_day = 'W-Fri'
 
-            for resampling_day in ['W-Mon', 'W-Tue', 'W-Wed', 'W-Thu', 'W-Fri', 'W-Sat']:
-                print("Resampling day:", resampling_day)
+            self.read_data()
 
-                # Exit config if accuracy is too low
-                if early_stopping:
-                    if (resampling_day == 'W-Tue' and np.mean(bal_acc_list) < 0.493) or \
-                            (resampling_day == 'W-Wed' and np.mean(bal_acc_list) < 0.502) or \
-                            (resampling_day == 'W-Thu' and np.mean(bal_acc_list) < 0.505):
+            self.fred_series = config['fred_series']
+            self.continuous_series = config['continuous_series']
+            self.columns_to_drop = config['columns_to_drop']
 
-                        print("Exit config due to low accuracy! \n")
-                        results[str(i)] = bal_acc_list
-                        break
+            # Call the methods
+            self.create_log()
+            self.add_monthly_fred_data()
+            self.add_continuous_data()
+            self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
+                                             sent_cols_to_drop=config['sent_cols_to_drop'])
+            self.add_shiller_cape(config['cape'])
+            self.fill_missing_values()
+            self.define_outcome_var()
+            self.create_features(extra_features_list=config['extra_features_list'],
+                                 features_no_ma=self.fred_series + config['continuous_no_ma'],
+                                 momentum_diff_list=config['momentum_diff_list'],
+                                 ma_timespans=config['ma_timespans'])
 
-                # change resampling day
-                self.resampling_day = resampling_day
-                self.columns_to_drop = config['columns_to_drop']
+            self.build_model(start_year=period[0], end_year=period[1],
+                             train_years=train_years,
+                             n_estimators=config['n_estimators'],
+                             max_features=config['max_features'],
+                             exclude_base_outcome_var=config['exclude_base_outcome'],
+                             perm_feat=False,
+                             recency_weighted=False,
+                             multiple_models=mult_boolean)
 
-                self.read_data()
+        self.final_evaluation(bal_acc_list=bal_acc_list,
+                              perform_sensitivity_test=False,
+                              multiple_models=multiple_models)
+        self.close_log()
+        self.print_balanced_accuracy()
 
-                self.fred_series = config['fred_series']
-                self.continuous_series = config['continuous_series']
+        return bal_acc_list
 
-                # Call the methods
-                self.create_log()
-                self.add_monthly_fred_data()
-                self.add_continuous_data()
-                self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
-                                                 sent_cols_to_drop=config['sent_cols_to_drop'])
-                self.add_shiller_cape(config['cape'])
-                self.fill_missing_values()
-                self.define_outcome_var()
-                self.create_features(extra_features_list=config['extra_features_list'],
-                                     features_no_ma=self.fred_series + config['continuous_no_ma'],
-                                     momentum_diff_list=config['momentum_diff_list'],
-                                     ma_timespans=config['ma_timespans'])
-                self.build_model(start_year=2014, end_year=2023,
-                                 n_estimators=config['n_estimators'],
-                                 max_features=config['max_features'],
-                                 exclude_base_outcome_var=config['exclude_base_outcome'],
-                                 perm_feat=False,
-                                 multiple_models=True)
 
-                self.final_evaluation(bal_acc_list=bal_acc_list,
-                                      perform_sensitivity_test=False)
-                self.close_log()
-                self.print_balanced_accuracy()
+    # Create a function for rolling validation sets
+    def create_validation_periods(self, validation_start_year: int, end_year: int, validation_years: int):
 
-            # Store the bal_acc_list in the results dictionary
-            results[str(i)] = bal_acc_list
+        # Create a list of lists of validation periods
+        validation_periods = []
 
-        return results
+        # Create start- and end year pairs
+        for year in range(validation_start_year, end_year, validation_years):
+            validation_start = year
+            validation_end = year + validation_years
+
+            if validation_end >= end_year:
+                break
+
+            validation_periods.append([validation_start, validation_end])
+
+        return validation_periods
+
+    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3, train_years: int = 20,
+                                   validation_start_year: int = 2011, end_year: int = 2024):
+
+        # Initiate validation periods
+        validation_periods = self.create_validation_periods(validation_start_year, end_year, validation_years)
+
+        # Create balanced accuracy list for test runs and prediction dataframe
+        test_bal_acc = {}
+        top_configs = []
+        test_predictions = pd.DataFrame()
+
+        # Loop over the validation periods
+        for index, period in enumerate(validation_periods):
+
+            # Print the current validation period
+            print(f" **** NEW PERIOD: {period} **** \n")
+
+            # Check that period is a list
+            assert isinstance(period, list), "Period must be a list"
+
+            # Initialize a dictionary for results
+            results = {}
+
+            # Loop over the different sets of features
+            for i, config in enumerate(feature_configs):
+                print(f" **** NEW FEATURE CONFIG: {i} **** \n")
+
+                # Store the bal_acc_list in the results dictionary
+                results[str(i)] = self.run_model_with_configs(feature_configs=config, period=period,
+                                                              train_years=train_years, multiple_models=False)
+
+            # Sort the results dictionary by the mean of the balanced accuracy list in descending order
+            sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
+
+            # Extract the top two configurations
+            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[1:3]]
+
+            # Increment test period
+            test_period = [year + validation_years for year in period]
+
+            # Print test balanced accuracy for period
+            print(f" **** TEST BAL ACC BEST CONFIG: {test_period} **** \n")
+
+            # Save the test balanced accuracy list
+            test_bal_acc[str(test_period[0])] = self.run_model_with_configs(feature_configs=top_configs,
+                                                                            period=test_period,
+                                                                            train_years=train_years,
+                                                                            multiple_models=True)
+
+            # Extract test prediction columns from data
+            pattern = r'REAL_PRED_PROBA_CLS_\d{1,2}'
+
+            # Use list comprehension to select the columns that match the pattern
+            selected_columns = [col for col in self.data.columns if re.match(pattern, col)] + \
+                               ['OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR_1']
+
+
+            # Filter for columns of interest
+            columns_of_interest = self.data[selected_columns]
+
+            # Concatenate test predictions of each period along index
+            test_predictions = pd.concat([test_predictions, columns_of_interest], axis=0)
+
+        # Check for duplicate indices
+        if test_predictions.index.duplicated().any():
+            raise AssertionError("Duplicate indices found in test_predictions")
+
+        # Set test predictions to self.data
+        self.data = test_predictions
+
+        # Final evaluation
+        print(f" **** STARTING FINAL EVALUATION **** \n")
+
+        # Open log file
+        self.create_log()
+
+        # Perform a final evaluation with date pairs
+        self.final_evaluation(save=True,
+                              perform_sensitivity_test=True,
+                              expanding_mean=False,
+                              test_date_pairs=True,
+                              multiple_models=False,
+                              bal_acc_switch=False,
+                              bal_acc_list=[])
+
+        # Close log file
+        self.close_log()
+
+        return top_configs, test_bal_acc
 
     def build_model_ensemble(self, feature_configs):
+
+        # TODO: Ensemble should only update latest observations!
 
         for i, config in enumerate(feature_configs):
             if i == 0:
@@ -753,7 +916,8 @@ class WeeklyFinancialForecastingModel:
                                  features_no_ma=self.fred_series + config['continuous_no_ma'],
                                  momentum_diff_list=config['momentum_diff_list'],
                                  ma_timespans=config['ma_timespans'])
-            self.build_model(start_year=2014, end_year=2023,
+            self.build_model(start_year=2023, end_year=2026,
+                             train_years=20,
                              n_estimators=config['n_estimators'],
                              max_features=config['max_features'],
                              exclude_base_outcome_var=config['exclude_base_outcome'],
@@ -769,6 +933,4 @@ class WeeklyFinancialForecastingModel:
         self.close_log()
         self.print_balanced_accuracy()
 
-# TODO: Experiment with testing performance on similar instruments: IWN -> VBR
-
-# TODO: Remember VVIX for a future
+# TODO: Make train years and validation splits model attributes

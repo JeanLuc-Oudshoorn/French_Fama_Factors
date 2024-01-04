@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.utils import resample
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from scipy.linalg import pinv
@@ -68,6 +67,7 @@ last_friday = today - timedelta(days=(today.weekday() - 4) % 7)
 for model in model_names:
     # Construct the path to the '_output.csv' file
     file_path = os.path.join('results', model, f'{model}_output.csv')
+
     # Get the last modified time of the file
     last_modified_time = os.path.getmtime(file_path)
 
@@ -78,12 +78,11 @@ for model in model_names:
     if last_modified_date.date() < last_friday.date():
         warnings.warn(f"The file '{file_path}' was created before the most recent Friday.")
 
-        # TODO: Uncomment the subprocess once ready
-        # # Construct the path to the script
-        # script_path = os.path.join('scripts', model, f'{model}_ensemble.py')
-        #
-        # # Run the script
-        # subprocess.run(['python', script_path])
+        # Construct the path to the script
+        script_path = os.path.join('scripts', model, f'{model}_ensemble.py')
+
+        # Run the script
+        subprocess.run(['python', script_path])
 
     # Print the most recent running date for the script
     print(f"The most recent running date for the script '{model}' is {last_modified_date.date()}.")
@@ -147,7 +146,7 @@ y = result['BEST']
 rel_delta_months = 2
 
 # Define a list of random seeds
-random_seeds = np.arange(0, 30)
+random_seeds = np.arange(0, 25)
 
 
 # ELM Functions
@@ -181,7 +180,7 @@ def softmax(x):
 
 
 # Loop over the list of random seeds
-def meta_model(random_seeds, elm, hidden_size=60):
+def meta_model(random_seeds, elm, hidden_size=20):
 
     # Initialize a list to store the prediction dataframes
     dfs = []
@@ -380,3 +379,5 @@ log_file.close()
 sys.stdout = sys.__stdout__
 
 # TODO: Combine RF and ELM for more robust results
+
+# TODO: Test double descent

@@ -1,6 +1,5 @@
 from scripts.Financial_forecasting_model import WeeklyFinancialForecastingModel
 from scripts.utils import *
-from logs.SMB.SMB_best_configs import best_configs
 import pprint
 import os
 
@@ -8,10 +7,10 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_custom_random_config() for _ in range(100)]
+random_configs = [build_custom_random_config() for _ in range(50)]
 
-# Add the best configurations from the HML model
-feature_configs = best_configs + random_configs
+# Add the best configurations from the SMB model
+feature_configs = random_configs
 
 # Print the configurations
 for configuration in feature_configs:
@@ -19,7 +18,8 @@ for configuration in feature_configs:
 
 # Initialize the class with required arguments
 model = WeeklyFinancialForecastingModel(log_path='logs/SMB/SMB_output_log_search.txt',
-                                        stocks_list=['IWD', 'IWF', 'IWN', 'IWO', 'QQQ', '^GSPC', '^VIX', 'ES=F'],
+                                        stocks_list=['IWD', 'IWF', 'IWN', 'IWO', 'QQQ', '^GSPC', '^VIX',
+                                                     'ES=F'],  # ^VVIX, ^MOVE
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',
                                         date_name='DATE',
@@ -30,31 +30,19 @@ model = WeeklyFinancialForecastingModel(log_path='logs/SMB/SMB_output_log_search
                                         series_diff=2,
                                         fred_series=[],
                                         continuous_series=[],
-                                        num_rounds=25,
-                                        test_start_date='2014-01-01',
+                                        num_rounds=20,
+                                        test_start_date='2011-01-01',
                                         output_path='results/SMB/SMB_output.csv')
 
 # Run the model with the different feature configurations
-results = model.run_model_with_configs(feature_configs)
+best_two, results = model.dynamically_optimize_model(feature_configs)
 
-# Sort the results dictionary by the mean of the balanced accuracy list in descending order
-sorted_results = sorted(results.items(), key=lambda x: -np.mean(x[1]))
-
-# Print the results
-for run, bal_acc_list in sorted_results:
-    print(f"Run {run}: {round(np.mean(bal_acc_list), 3)}")
+# Open the file in write mode
+with open('logs/SMB/SMB_best_configs_auto.py', 'w') as f:
+    # Write the best_configs list to the file
+    f.write('best_configs = ' + pprint.pformat(best_two))
 
 # Save the results dictionary as a pickle file
 with open('results/SMB/SMB_results.pkl', 'wb') as f:
     pickle.dump(results, f)
 
-# Extract the top two configurations
-top_four_configs = [feature_configs[int(run)] for run, _ in sorted_results[:4]]
-
-# Create a new list and append the top two configurations
-best_configs = top_four_configs
-
-# Open the file in write mode
-with open('logs/SMB/SMB_best_configs_auto.py', 'w') as f:
-    # Write the best_configs list to the file
-    f.write('best_configs = ' + pprint.pformat(best_configs))
