@@ -7,7 +7,7 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_custom_random_config() for _ in range(40)]
+random_configs = [build_custom_random_config() for _ in range(50)]
 
 # Add the best configurations from the SGLV model
 feature_configs = random_configs
@@ -35,9 +35,13 @@ model = WeeklyFinancialForecastingModel(log_path='logs/SGLV/SGLV_output_log_sear
                                         output_path='results/SGLV/SGLV_output.csv')
 
 # Run the model with the different feature configurations
-best_two = model.dynamically_optimize_model(feature_configs)
+best_two, results = model.dynamically_optimize_model(feature_configs)
 
 # Open the file in write mode
 with open('logs/SGLV/SGLV_best_configs_auto.py', 'w') as f:
     # Write the best_configs list to the file
     f.write('best_configs = ' + pprint.pformat(best_two))
+
+# Save the results dictionary as a pickle file
+with open('results/SGLV/SGLV_results.pkl', 'wb') as f:
+    pickle.dump(results, f)

@@ -31,13 +31,17 @@ model = WeeklyFinancialForecastingModel(log_path='logs/SMBG/SMBG_output_log_sear
                                         fred_series=[],
                                         continuous_series=[],
                                         num_rounds=20,
-                                        test_start_date='2014-01-01',
+                                        test_start_date='2011-01-01',
                                         output_path='results/SMBG/SMBG_output.csv')
 
 # Run the model with the different feature configurations
-best_two = model.dynamically_optimize_model(feature_configs)
+best_two, results = model.dynamically_optimize_model(feature_configs)
 
 # Open the file in write mode
 with open('logs/SMBG/SMBG_best_configs_auto.py', 'w') as f:
     # Write the best_configs list to the file
     f.write('best_configs = ' + pprint.pformat(best_two))
+
+# Save the results dictionary as a pickle file
+with open('results/SMBG/SMBG_results.pkl', 'wb') as f:
+    pickle.dump(results, f)

@@ -197,6 +197,7 @@ class WeeklyFinancialForecastingModel:
             cape_data.drop(columns=['Date'], inplace=True)
 
             # TODO: Check when the data is released and add the appropriate number of days
+            # TODO: Switch to other Shiller PE source
             # Add 4 days to the 'DATE' feature to account for info release date
             cape_data[self.date_name] = cape_data[self.date_name] + pd.Timedelta(days=1)
             cape_data = cape_data[cape_data[self.date_name] <= self.current_date]
@@ -207,7 +208,7 @@ class WeeklyFinancialForecastingModel:
 
             # Resample to get every day
             expanded_cape_data = pd.merge(expanded_cape_data, self.daily_data, left_on='DATE',
-                                          right_on=self.daily_data.index, how='left')
+                                          right_on=self.daily_data.index, how='outer')
 
             # Find days with missing values
             mask = expanded_cape_data['CAPE'].isna()
@@ -510,15 +511,15 @@ class WeeklyFinancialForecastingModel:
                 test = self.data[(self.data.index >= timesplit) &
                                  (self.data.index <= pd.to_datetime(timesplit) + pd.DateOffset(months=3))]
 
+                # Skip to next iteration if X_test is empty
+                if test.empty:
+                    continue
+
                 # Split into X and Y
                 X_train = train[pred_vars].values
                 X_test = test[pred_vars].values
                 y_train = train['OUTCOME_VAR_1_INDICATOR'].values
                 y_test = test['OUTCOME_VAR_1_INDICATOR'].values
-
-                # Skip to next iteration if X_test is empty
-                if X_test.empty:
-                    continue
 
                 # Create option to weight samples by recency
                 if recency_weighted:
@@ -831,7 +832,7 @@ class WeeklyFinancialForecastingModel:
             sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
 
             # Extract the top two configurations
-            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[2:4]]
+            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[1:3]]
 
             # Increment test period
             test_period = [year + validation_years for year in period]
@@ -887,6 +888,8 @@ class WeeklyFinancialForecastingModel:
         return top_configs, test_bal_acc
 
     def build_model_ensemble(self, feature_configs):
+
+        # TODO: Ensemble should only update latest observations!
 
         for i, config in enumerate(feature_configs):
             if i == 0:

@@ -146,7 +146,7 @@ y = result['BEST']
 rel_delta_months = 2
 
 # Define a list of random seeds
-random_seeds = np.arange(0, 20)
+random_seeds = np.arange(0, 25)
 
 
 # ELM Functions
@@ -180,7 +180,7 @@ def softmax(x):
 
 
 # Loop over the list of random seeds
-def meta_model(random_seeds, elm, hidden_size=200000):
+def meta_model(random_seeds, elm, hidden_size=20):
 
     # Initialize a list to store the prediction dataframes
     dfs = []
@@ -252,7 +252,7 @@ def meta_model(random_seeds, elm, hidden_size=200000):
 
 
 # Run the model
-dfs = meta_model(random_seeds, elm=True)
+dfs = meta_model(random_seeds, elm=False)
 
 # Concatenate all the prediction dataframes along the column axis
 all_predictions = pd.concat(dfs, axis=1)
