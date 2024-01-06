@@ -18,11 +18,13 @@ for configuration in feature_configs:
 
 # Initialize the class with required arguments
 model = WeeklyFinancialForecastingModel(log_path='logs/QQQ/QQQ_output_log_search.txt',
-                                        stocks_list=['SPY', 'QQQ', '^NDX', '^GSPC', '^VXN', '^VIX', 'ES=F', 'NQ=F'],  # ^VVIX, ^MOVE
+                                        stocks_list=['SPY', 'IWD', 'IWF', 'QQQ', '^NDX', '^GSPC',
+                                                     '^VXN', '^VIX', '^NYICDX', 'ES=F', 'NQ=F'],  # ^VVIX, ^MOVE
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',
                                         date_name='DATE',
-                                        col_names=['DATE', 'SPY', 'QQQ', 'NDQ', 'SP500', 'NVIX', 'VIX', 'SP500F', 'NDQF'],
+                                        col_names=['DATE', 'SPY', 'LCV', 'LCG', 'QQQ', 'NDQ', 'SP500',
+                                                   'NVIX', 'VIX', 'DIDX', 'SP500F', 'NDQF'],
                                         columns_to_drop=[],
                                         outcome_vars=['QQQ', 'SPY'],
                                         series_diff=2,
