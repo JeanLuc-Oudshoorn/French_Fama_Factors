@@ -102,6 +102,48 @@ def build_custom_random_config():
     return config
 
 
+def build_nasdaq_random_config():
+    # Define the options for each configuration
+    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'FUT', 'NSDQFUT',
+                        'DEMA', 'CFO', 'ER', 'HML', 'MA_CROSS', 'YEAR', 'DRAWD', 'DRAWU', 'WOY', 'MONTH']
+    columns_options = ['OUTCOME_VOLUME', 'VIX', 'NVIX']
+    fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
+    continuous_series_options = ['DGS10', 'T10Y2Y', 'T10Y3M', 'USEPUINDXD', 'AAAFF', 'DFF', 'AAA10Y', 'DTP30A28']
+    sentiment_options = ['BULLISH', 'BEARISH']
+
+    # Generate random configurations
+    extra_features_list = list(np.random.choice(features_options, np.random.randint(3, 10), replace=False))
+    columns_to_drop = ['NDQF', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(0, 3), replace=False))
+    ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
+    fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
+    continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 6), replace=False))
+    sent_cols_to_drop = ['NEUTRAL'] + list(np.random.choice(sentiment_options, np.random.randint(1, 3), replace=False))
+    cape = np.random.choice([True, False], p=[0.4, 0.6])
+    max_features = np.round(np.random.uniform(0.2, 0.37), 2)
+    n_estimators = np.random.randint(70, 120)
+    exclude_base_outcome = np.random.choice([True, False])
+    momentum_diff_list = []
+    continuous_no_ma = np.random.choice(continuous_series, np.random.randint(0, len(continuous_series) + 1),
+                                        replace=False).tolist()
+
+    # Build the configuration dictionary
+    config = {
+        'extra_features_list': extra_features_list,
+        'ma_timespans': ma_timespans,
+        'columns_to_drop': columns_to_drop,
+        'fred_series': fred_series,
+        'continuous_series': continuous_series,
+        'sent_cols_to_drop': sent_cols_to_drop,
+        'cape': cape,
+        'max_features': max_features,
+        'n_estimators': n_estimators,
+        'exclude_base_outcome': exclude_base_outcome,
+        'continuous_no_ma': continuous_no_ma,
+        'momentum_diff_list': momentum_diff_list
+    }
+
+    return config
+
 
 def modify_config(config, max_mutations=3):
     # Create a copy of the config dictionary
