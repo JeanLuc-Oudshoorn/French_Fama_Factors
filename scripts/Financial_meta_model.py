@@ -378,6 +378,3 @@ print(f"Expected contingency table: \n{np.round(expected, 1)}")
 log_file.close()
 sys.stdout = sys.__stdout__
 
-# TODO: Combine RF and ELM for more robust results
-
-# TODO: Test double descent

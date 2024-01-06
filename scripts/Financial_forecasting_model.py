@@ -6,6 +6,7 @@ from sklearn.metrics import (accuracy_score, roc_auc_score, precision_score, bal
 from sklearn.inspection import permutation_importance
 import pandas_datareader.data as web
 import yfinance as yf
+from typing import Union
 import sys
 from datetime import datetime
 import warnings
@@ -122,6 +123,9 @@ class WeeklyFinancialForecastingModel:
             fred_data.set_index(self.date_name, inplace=True)
             resampled = fred_data.resample(self.resampling_day).first().reset_index()
 
+            # Forward fill the resampled data
+            resampled.fillna(method='ffill', inplace=True)
+
             # Perform merge
             self.data = self.data.merge(resampled, how='outer', on=self.date_name)
 
@@ -187,20 +191,10 @@ class WeeklyFinancialForecastingModel:
 
         if apply:
             # Read in Shiller CAPE data
-            cape_data = pd.read_csv('historic_cape.csv')
+            cape_data = pd.read_excel('shiller_cape_alt.xlsx')
 
             # Convert to datetime
-            cape_data[self.date_name] = pd.to_datetime(cape_data['Date'], format='%d/%m/%Y')
-
-            # Rename data column and drop old date
-            cape_data.rename(columns={'USA': 'CAPE'}, inplace=True)
-            cape_data.drop(columns=['Date'], inplace=True)
-
-            # TODO: Check when the data is released and add the appropriate number of days
-            # TODO: Switch to other Shiller PE source
-            # Add 4 days to the 'DATE' feature to account for info release date
-            cape_data[self.date_name] = cape_data[self.date_name] + pd.Timedelta(days=1)
-            cape_data = cape_data[cape_data[self.date_name] <= self.current_date]
+            cape_data[self.date_name] = pd.to_datetime(cape_data['DATE'], format='%Y-%m-%d')
 
             # Set index and resample
             cape_data.set_index(self.date_name, inplace=True)
@@ -213,6 +207,8 @@ class WeeklyFinancialForecastingModel:
             # Find days with missing values
             mask = expanded_cape_data['CAPE'].isna()
 
+            self.mask = mask
+
             # Forward fill daily S&P500 Close and CAPE
             columns_to_fill = ['^GSPC', 'CAPE']
             for column in columns_to_fill:
@@ -221,8 +217,13 @@ class WeeklyFinancialForecastingModel:
             # Calculate S&P500 cumulative returns per month
             expanded_cape_data['log_returns'] = np.log(1 + expanded_cape_data['^GSPC'].pct_change())
             expanded_cape_data['cumulative_returns'] = \
-            expanded_cape_data.groupby(expanded_cape_data['DATE'].dt.to_period('M'))['log_returns'] \
+                expanded_cape_data.groupby(expanded_cape_data['DATE'].dt.to_period('M'))['log_returns'] \
                 .transform(lambda x: x.cumsum())
+
+            # Drop rows where 'cumulative_returns' is missing
+            expanded_cape_data = expanded_cape_data.dropna(subset=['cumulative_returns'])
+
+            self.cape = expanded_cape_data
 
             # Multiply the previously missing values with cumulative returns
             expanded_cape_data.loc[mask, 'CAPE'] = expanded_cape_data.loc[mask, 'CAPE'] * (
@@ -293,21 +294,26 @@ class WeeklyFinancialForecastingModel:
                                (self.data['Large Cap Value'] + self.data['Large Cap Growth'])
 
         if 'SMBG' in extra_features_list and all(item in self.data.columns for item in
-                                                ['Small Cap Growth', 'Large Cap Growth']):
-            # Create proxy small minus big
+                                                 ['Small Cap Growth', 'Large Cap Growth']):
+            # Create proxy small minus big (growth stocks)
             self.data['SMBG'] = (self.data['Small Cap Growth'] - self.data['Large Cap Growth'])
 
         if 'HML' in extra_features_list and all(item in self.data.columns for item in
-                                                  ['Small Cap Value', 'Small Cap Growth',
-                                                   'Large Cap Value', 'Large Cap Growth']):
+                                                ['Small Cap Value', 'Small Cap Growth',
+                                                 'Large Cap Value', 'Large Cap Growth']):
             # Create proxy high minus low
             self.data['HML'] = (self.data['Small Cap Value'] + self.data['Large Cap Value']) - \
                                (self.data['Small Cap Growth'] + self.data['Large Cap Growth'])
 
         if 'HMLS' in extra_features_list and all(item in self.data.columns for item in
-                                                ['Small Cap Value', 'Small Cap Growth']):
-            # Create proxy small minus big
+                                                 ['Small Cap Value', 'Small Cap Growth']):
+            # Create proxy high minus low
             self.data['HMLS'] = (self.data['Small Cap Value'] - self.data['Small Cap Growth'])
+
+        if 'HMLL' in extra_features_list and all(item in self.data.columns for item in
+                                                 ['LCV', 'LCG']):
+            # Create proxy high minus low (large caps)
+            self.data['HMLL'] = (self.data['LCV'] - self.data['LCG'])
 
         # Create original prices back -- for technical indicators later
         if self.series_diff == 2:
@@ -472,7 +478,7 @@ class WeeklyFinancialForecastingModel:
 
     def build_model(self, start_year: int = 2014, end_year: int = 2024, n_estimators: int = 100, train_years: int = 20,
                     max_features: float = .4, exclude_base_outcome_var=False, perm_feat=False, multiple_models=False,
-                    recency_weighted=True):
+                    recency_weighted=False):
 
         # Drop columns resulting from setting the index if they haven't been already
         self.data = self.data.drop(['level_0', 'index'], axis=1, errors='ignore')
@@ -523,7 +529,7 @@ class WeeklyFinancialForecastingModel:
 
                 # Create option to weight samples by recency
                 if recency_weighted:
-                    sw_train = np.linspace(1, 2, X_train.shape[0])
+                    sw_train = np.linspace(1, 1.5, X_train.shape[0])
                 else:
                     sw_train = np.repeat(1, X_train.shape[0])
 
@@ -566,7 +572,7 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def final_evaluation(self, bal_acc_list: list, save=False, perform_sensitivity_test=False,
+    def final_evaluation(self, bal_acc_list: list, save=False, update=False, perform_sensitivity_test=False,
                          expanding_mean=False, test_date_pairs=False, multiple_models=False, bal_acc_switch=True):
 
         if multiple_models:
@@ -703,7 +709,20 @@ class WeeklyFinancialForecastingModel:
                 bal_acc_list.append(bal_acc)
 
         # Save results for further analysis
-        if save:
+        if update:
+            # Read the existing data from the CSV file
+            existing_data = pd.read_csv(self.output_path, index_col=self.date_name, parse_dates=True)
+
+            # Keep only the rows with an index that is also in self.data
+            existing_data = existing_data[existing_data.index.isin(self.data.index)]
+
+            # Update the existing_data with the values from self.data
+            existing_data.update(self.data)
+
+            # Save the updated data to the output path
+            existing_data.to_csv(self.output_path)
+
+        elif save:
             self.data.to_csv(self.output_path)
 
     def close_log(self):
@@ -724,7 +743,7 @@ class WeeklyFinancialForecastingModel:
 
         return bal_acc
 
-    def run_model_with_configs(self, feature_configs: list, period: list, train_years: int, multiple_models: bool):
+    def run_model_with_configs(self, feature_configs: Union[list, dict], period: list, multiple_models: bool):
 
         # Initialize a list with balanced accuracy values
         bal_acc_list = []
@@ -759,15 +778,17 @@ class WeeklyFinancialForecastingModel:
             self.create_features(extra_features_list=config['extra_features_list'],
                                  features_no_ma=self.fred_series + config['continuous_no_ma'],
                                  momentum_diff_list=config['momentum_diff_list'],
-                                 ma_timespans=config['ma_timespans'])
+                                 ma_timespans=config['ma_timespans'],
+                                 mom_length=config['mom_length'],
+                                 stats_length=config['stats_length'])
 
             self.build_model(start_year=period[0], end_year=period[1],
-                             train_years=train_years,
+                             train_years=config['train_years'],
                              n_estimators=config['n_estimators'],
                              max_features=config['max_features'],
                              exclude_base_outcome_var=config['exclude_base_outcome'],
+                             recency_weighted=config['recency_weighted'],
                              perm_feat=False,
-                             recency_weighted=False,
                              multiple_models=mult_boolean)
 
         self.final_evaluation(bal_acc_list=bal_acc_list,
@@ -797,7 +818,7 @@ class WeeklyFinancialForecastingModel:
 
         return validation_periods
 
-    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3, train_years: int = 20,
+    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3,
                                    validation_start_year: int = 2011, end_year: int = 2024):
 
         # Initiate validation periods
@@ -826,13 +847,13 @@ class WeeklyFinancialForecastingModel:
 
                 # Store the bal_acc_list in the results dictionary
                 results[str(i)] = self.run_model_with_configs(feature_configs=config, period=period,
-                                                              train_years=train_years, multiple_models=False)
+                                                              multiple_models=False)
 
             # Sort the results dictionary by the mean of the balanced accuracy list in descending order
             sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
 
             # Extract the top two configurations
-            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[1:3]]
+            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[:2]]
 
             # Increment test period
             test_period = [year + validation_years for year in period]
@@ -843,7 +864,6 @@ class WeeklyFinancialForecastingModel:
             # Save the test balanced accuracy list
             test_bal_acc[str(test_period[0])] = self.run_model_with_configs(feature_configs=top_configs,
                                                                             period=test_period,
-                                                                            train_years=train_years,
                                                                             multiple_models=True)
 
             # Extract test prediction columns from data
@@ -852,7 +872,6 @@ class WeeklyFinancialForecastingModel:
             # Use list comprehension to select the columns that match the pattern
             selected_columns = [col for col in self.data.columns if re.match(pattern, col)] + \
                                ['OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR_1']
-
 
             # Filter for columns of interest
             columns_of_interest = self.data[selected_columns]
@@ -889,8 +908,6 @@ class WeeklyFinancialForecastingModel:
 
     def build_model_ensemble(self, feature_configs):
 
-        # TODO: Ensemble should only update latest observations!
-
         for i, config in enumerate(feature_configs):
             if i == 0:
                 mult_boolean = True
@@ -915,15 +932,20 @@ class WeeklyFinancialForecastingModel:
             self.create_features(extra_features_list=config['extra_features_list'],
                                  features_no_ma=self.fred_series + config['continuous_no_ma'],
                                  momentum_diff_list=config['momentum_diff_list'],
-                                 ma_timespans=config['ma_timespans'])
+                                 ma_timespans=config['ma_timespans'],
+                                 mom_length=config['mom_length'],
+                                 stats_length=config['stats_length'])
+
             self.build_model(start_year=2023, end_year=2026,
-                             train_years=20,
+                             train_years=config['train_years'],
                              n_estimators=config['n_estimators'],
                              max_features=config['max_features'],
                              exclude_base_outcome_var=config['exclude_base_outcome'],
+                             recency_weighted=config['recency_weighted'],
                              perm_feat=False, multiple_models=mult_boolean)
 
-        self.final_evaluation(save=True,
+        self.final_evaluation(save=False,
+                              update=True,
                               perform_sensitivity_test=True,
                               expanding_mean=True,
                               test_date_pairs=True,
@@ -932,5 +954,3 @@ class WeeklyFinancialForecastingModel:
                               bal_acc_list=[])
         self.close_log()
         self.print_balanced_accuracy()
-
-# TODO: Make train years and validation splits model attributes

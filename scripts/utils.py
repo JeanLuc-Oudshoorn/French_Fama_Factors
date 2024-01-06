@@ -78,6 +78,8 @@ def build_custom_random_config():
     cape = np.random.choice([True, False], p=[0.38, 0.62])
     max_features = np.round(np.random.uniform(0.2, 0.37), 2)
     n_estimators = np.random.randint(70, 120)
+    stats_length = np.random.randint(20, 52)
+    mom_length = np.random.randint(7, 14)
     exclude_base_outcome = np.random.choice([True, False])
     momentum_diff_list = []
     continuous_no_ma = np.random.choice(continuous_series, np.random.randint(0, len(continuous_series) + 1),
@@ -94,6 +96,8 @@ def build_custom_random_config():
         'cape': cape,
         'max_features': max_features,
         'n_estimators': n_estimators,
+        'stats_length': stats_length,
+        'mom_length': mom_length,
         'exclude_base_outcome': exclude_base_outcome,
         'continuous_no_ma': continuous_no_ma,
         'momentum_diff_list': momentum_diff_list
@@ -104,23 +108,25 @@ def build_custom_random_config():
 
 def build_nasdaq_random_config():
     # Define the options for each configuration
-    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'FUT', 'NSDQFUT',
-                        'DEMA', 'CFO', 'ER', 'HML', 'MA_CROSS', 'YEAR', 'DRAWD', 'DRAWU', 'WOY', 'MONTH']
-    columns_options = ['OUTCOME_VOLUME', 'VIX', 'NVIX']
+    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'FUT', 'NSDQFUT', 'HMLL',
+                        'DEMA', 'CFO', 'ER', 'MA_CROSS', 'YEAR', 'DRAWD', 'DRAWU', 'WOY', 'MONTH']
+    columns_options = ['OUTCOME_VOLUME', 'VIX', 'NVIX', 'LCV', 'LCG']
     fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
     continuous_series_options = ['DGS10', 'T10Y2Y', 'T10Y3M', 'USEPUINDXD', 'AAAFF', 'DFF', 'AAA10Y', 'DTP30A28']
     sentiment_options = ['BULLISH', 'BEARISH']
 
     # Generate random configurations
     extra_features_list = list(np.random.choice(features_options, np.random.randint(3, 10), replace=False))
-    columns_to_drop = ['NDQF', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(0, 3), replace=False))
+    columns_to_drop = ['NDQF', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(0, 6), replace=False))
     ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
     fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
     continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 6), replace=False))
     sent_cols_to_drop = ['NEUTRAL'] + list(np.random.choice(sentiment_options, np.random.randint(1, 3), replace=False))
     cape = np.random.choice([True, False], p=[0.4, 0.6])
-    max_features = np.round(np.random.uniform(0.2, 0.37), 2)
-    n_estimators = np.random.randint(70, 120)
+    max_features = np.round(np.random.uniform(0.2, 0.42), 2)
+    n_estimators = np.random.randint(70, 140)
+    train_years = np.random.randint(10, 25)
+    recency_weighted = np.random.choice([True, False], p=[0.35, 0.65])
     exclude_base_outcome = np.random.choice([True, False])
     momentum_diff_list = []
     continuous_no_ma = np.random.choice(continuous_series, np.random.randint(0, len(continuous_series) + 1),
@@ -137,6 +143,8 @@ def build_nasdaq_random_config():
         'cape': cape,
         'max_features': max_features,
         'n_estimators': n_estimators,
+        'train_years': train_years,
+        'recency_weighted': recency_weighted,
         'exclude_base_outcome': exclude_base_outcome,
         'continuous_no_ma': continuous_no_ma,
         'momentum_diff_list': momentum_diff_list
