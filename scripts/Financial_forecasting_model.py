@@ -115,8 +115,17 @@ class WeeklyFinancialForecastingModel:
             fred_data.reset_index(inplace=True)
             fred_data[self.date_name] = pd.to_datetime(fred_data[self.date_name])
 
-            # Add 14 days to the 'DATE' feature to account for info release date
-            fred_data[self.date_name] = fred_data[self.date_name] + pd.Timedelta(days=14)
+            # Add 14 days to the 'DATE' feature to account for info release date -- check FRED release calendar
+            if key in ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']:
+                fred_data[self.date_name] = fred_data[self.date_name] + pd.Timedelta(days=14)
+
+            elif key in ['UNRATE', 'SAHMCURRENT']:
+                fred_data[self.date_name] = fred_data[self.date_name] + pd.Timedelta(days=35)
+
+            elif key in ['PSAVERT']:
+                fred_data[self.date_name] = fred_data[self.date_name] + pd.Timedelta(days=22)
+
+
             fred_data = fred_data[fred_data[self.date_name] <= self.current_date]
 
             # Set index and resample
@@ -193,8 +202,9 @@ class WeeklyFinancialForecastingModel:
             # Read in Shiller CAPE data
             cape_data = pd.read_excel('shiller_cape_alt.xlsx')
 
-            # Convert to datetime
+            # Convert to correct types
             cape_data[self.date_name] = pd.to_datetime(cape_data['DATE'], format='%Y-%m-%d')
+            cape_data['CAPE'] = cape_data['CAPE'].astype(float)
 
             # Set index and resample
             cape_data.set_index(self.date_name, inplace=True)
