@@ -2,7 +2,8 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (accuracy_score, roc_auc_score, precision_score, balanced_accuracy_score)
+from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score)
+from imblearn.metrics import specificity_score
 from sklearn.inspection import permutation_importance
 import pandas_datareader.data as web
 import yfinance as yf
@@ -217,8 +218,6 @@ class WeeklyFinancialForecastingModel:
             # Find days with missing values
             mask = expanded_cape_data['CAPE'].isna()
 
-            self.mask = mask
-
             # Forward fill daily S&P500 Close and CAPE
             columns_to_fill = ['^GSPC', 'CAPE']
             for column in columns_to_fill:
@@ -232,8 +231,6 @@ class WeeklyFinancialForecastingModel:
 
             # Drop rows where 'cumulative_returns' is missing
             expanded_cape_data = expanded_cape_data.dropna(subset=['cumulative_returns'])
-
-            self.cape = expanded_cape_data
 
             # Multiply the previously missing values with cumulative returns
             expanded_cape_data.loc[mask, 'CAPE'] = expanded_cape_data.loc[mask, 'CAPE'] * (
@@ -637,22 +634,23 @@ class WeeklyFinancialForecastingModel:
 
         acc = accuracy_score(y_test, y_pred)
         bal_acc = balanced_accuracy_score(y_test, y_pred)
-        roc = roc_auc_score(y_test, y_pred)
+        rec = recall_score(y_test, y_pred)
         prec = precision_score(y_test, y_pred)
+        spec = specificity_score(y_test, y_pred)
 
         # Full period classification results
         print("FULL PERIOD:")
         print("Real Clas. Model Acc.:", round(acc, 3))
         print("Real Clas. Model Bal. Acc.:", round(bal_acc, 3))
-        print("Real Clas. Model Roc-Auc:", round(roc, 3))
-        print("Real Clas. Model Prec.:", round(prec, 3), '\n')
+        print("Real Clas. Model Recall:", round(rec, 3))
+        print("Real Clas. Model Prec.:", round(prec, 3))
+        print("Real Clas. Model Spec.:", round(spec, 3), '\n')
 
         if test_date_pairs:
             # Create a list of one-year intervals
             date_list = pd.date_range(start=self.test_start_date,
                                       end=(pd.to_datetime('today') + pd.DateOffset(years=1)).strftime('%Y-%m-%d'),
                                       freq='YS').strftime('%Y-%m-%d').tolist()
-
 
             # Initialize an empty list to store the date pairs
             date_pairs = []
@@ -691,8 +689,8 @@ class WeeklyFinancialForecastingModel:
                 print(f'Accuracy for predictions with probability {sign} {val}%: {accuracy_prob:.4f}', '\n')
 
         if perform_sensitivity_test:
-            sensitivity_test([0.53, 0.55, 0.57], ['53', '55', '57'], True)
-            sensitivity_test([0.47, 0.45, 0.43], ['47', '45', '43'], False)
+            sensitivity_test([0.53, 0.55, 0.57, 0.59], ['53', '55', '57', '59'], True)
+            sensitivity_test([0.47, 0.45, 0.43, 0.41], ['47', '45', '43', '41'], False)
 
 
         print("Mean One-week forward probability:",
@@ -712,8 +710,9 @@ class WeeklyFinancialForecastingModel:
                 else:
                     y_pred = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_CLS_{seed}']
 
+                # TODO: May want to set back to balanced accuracy
                 # Calculate balanced accuracy
-                bal_acc = balanced_accuracy_score(y_test, y_pred)
+                bal_acc = precision_score(y_test, y_pred)
 
                 # Print results
                 bal_acc_list.append(bal_acc)
@@ -863,7 +862,7 @@ class WeeklyFinancialForecastingModel:
             sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
 
             # Extract the top two configurations
-            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[:2]]
+            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[1:3]]
 
             # Increment test period
             test_period = [year + validation_years for year in period]
@@ -964,3 +963,7 @@ class WeeklyFinancialForecastingModel:
                               bal_acc_list=[])
         self.close_log()
         self.print_balanced_accuracy()
+
+# TODO: Write more asserts
+
+# TODO: Pass on best config in previous period
