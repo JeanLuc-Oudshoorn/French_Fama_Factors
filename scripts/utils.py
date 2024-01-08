@@ -227,7 +227,7 @@ def crossover_config(config1, config2):
     return config
 
 
-def visual_results_analysis(name, runs, num_rounds=30, save=True):
+def visual_results_analysis(name, save=True):
     # Load the results dictionary from the pickle file
     with open(f'../../results/{name}/{name}_results.pkl', 'rb') as f:
         results = pickle.load(f)
@@ -243,7 +243,7 @@ def visual_results_analysis(name, runs, num_rounds=30, save=True):
     plt.axvline(x=0.500, color='black', linestyle='--')
     plt.xlabel('Balanced Accuracy')
     plt.ylabel('Density')
-    plt.title(f'Distribution of Balanced Accuracy by Forecasting Period')
+    plt.title(f'Distribution of Precision by Forecasting Period')
 
     # Save the plot
     if save:

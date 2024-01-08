@@ -126,7 +126,6 @@ class WeeklyFinancialForecastingModel:
             elif key in ['PSAVERT']:
                 fred_data[self.date_name] = fred_data[self.date_name] + pd.Timedelta(days=22)
 
-
             fred_data = fred_data[fred_data[self.date_name] <= self.current_date]
 
             # Set index and resample
@@ -285,6 +284,10 @@ class WeeklyFinancialForecastingModel:
 
         # Create indicator outcome for classification
         self.data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.data['OUTCOME_VAR_1'] >= 0, 1, 0)
+
+        # Save train period
+        self.train = self.data[self.data.index < (pd.to_datetime(self.test_start_date) +
+                                                  pd.Timedelta(days=365*3)).strftime('%Y-%m-%d')]
 
         return self.data
 
@@ -600,13 +603,15 @@ class WeeklyFinancialForecastingModel:
         self.data['MEAN_PRED_CLS'] = np.where(self.data['MEAN_PRED_PROBA'] >= 0.5, 1, 0)
 
         # Print ratio of positives by year
-        self.data['YEAR'] = self.data.index.year
-        mean_outcome_by_year = self.data.groupby('YEAR')['OUTCOME_VAR_1_INDICATOR'].mean()
-        print("Ratio positives:", round(mean_outcome_by_year, 3), '\n')
+        for frame, name in zip([self.train, self.data], ['train', 'test']):
+            frame['YEAR'] = frame.index.year
 
-        # Print ratio positives in the test set
-        print("Ratio positives (test set):",
-              round(self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
+            mean_outcome_by_year = frame.groupby('YEAR')['OUTCOME_VAR_1_INDICATOR'].mean()
+            print(f"Ratio positives {name}:", round(mean_outcome_by_year, 3), '\n')
+
+            # Print ratio positives in the train- & test set
+            print(f"Ratio positives (full {name} set):",
+                  round(frame['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
 
         # Filter the data for current date
         self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
@@ -691,7 +696,6 @@ class WeeklyFinancialForecastingModel:
         if perform_sensitivity_test:
             sensitivity_test([0.53, 0.55, 0.57, 0.59], ['53', '55', '57', '59'], True)
             sensitivity_test([0.47, 0.45, 0.43, 0.41], ['47', '45', '43', '41'], False)
-
 
         print("Mean One-week forward probability:",
               round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
@@ -807,7 +811,6 @@ class WeeklyFinancialForecastingModel:
         self.print_balanced_accuracy()
 
         return bal_acc_list
-
 
     # Create a function for rolling validation sets
     def create_validation_periods(self, validation_start_year: int, end_year: int, validation_years: int):
