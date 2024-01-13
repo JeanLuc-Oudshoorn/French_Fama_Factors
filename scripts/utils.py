@@ -61,28 +61,29 @@ def build_custom_random_config():
                         'DEMA', 'CFO', 'ER', 'HML', 'MA_CROSS', 'YEAR', 'DRAWD', 'DRAWU']
     columns_options = ['OUTCOME_VOLUME', 'VIX', 'Small Cap Value', 'Small Cap Growth',
                        'Large Cap Value', 'Large Cap Growth']
-    fred_series_options = ['REAINTRATREARAT1YE', 'EXPINF10YR', 'EXPINF1YR']
-    continuous_series_options = ['DGS10', 'T10Y2Y', 'USEPUINDXD', 'AAAFF', 'DFF']
+    fred_series_options = ['EXPINF10YR', 'EXPINF1YR', 'UNRATE', 'PSAVERT', 'SAHMCURRENT', 'REAINTRATREARAT1YE']
+    continuous_series_options = ['DGS10', 'T10Y2Y', 'T10Y3M', 'USEPUINDXD', 'AAAFF', 'DFF', 'AAA10Y', 'DTP30A28']
     sentiment_options = ['BULLISH', 'BEARISH']
 
     # Generate random configurations
-    extra_features_list = ['WOY'] + list(np.random.choice(features_options, np.random.randint(2, 7),
-                                                                 replace=False))
-    extra_features_list = random.choice([extra_features_list, extra_features_list[1:], extra_features_list[2:]])
+    extra_features_list = list(np.random.choice(features_options, np.random.randint(0, 6), replace=False))
     columns_to_drop = ['Nasdaq', 'SP500', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(1, 7), replace=False))
     ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
     fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
     continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 5), replace=False))
     sent_cols_to_drop = ['NEUTRAL'] + list(np.random.choice(sentiment_options, np.random.randint(1, 3), replace=False))
-    cape = np.random.choice([True, False], p=[0.38, 0.62])
-    max_features = np.round(np.random.uniform(0.2, 0.37), 2)
-    n_estimators = np.random.randint(70, 120)
+    cape = np.random.choice([True, False], p=[0.4, 0.6])
+    max_features = np.round(np.random.uniform(0.2, 0.4), 2)
+    n_estimators = np.random.randint(70, 140)
     stats_length = np.random.randint(20, 52)
     mom_length = np.random.randint(7, 14)
+    train_years = np.random.randint(10, 25)
+    recency_weighted = np.random.choice([True, False], p=[0.15, 0.85])
     exclude_base_outcome = np.random.choice([True, False])
     momentum_diff_list = []
     continuous_no_ma = np.random.choice(continuous_series, np.random.randint(0, len(continuous_series) + 1),
                                         replace=False).tolist()
+
 
     # Build the configuration dictionary
     config = {
@@ -97,6 +98,8 @@ def build_custom_random_config():
         'n_estimators': n_estimators,
         'stats_length': stats_length,
         'mom_length': mom_length,
+        'train_years': train_years,
+        'recency_weighted': recency_weighted,
         'exclude_base_outcome': exclude_base_outcome,
         'continuous_no_ma': continuous_no_ma,
         'momentum_diff_list': momentum_diff_list
