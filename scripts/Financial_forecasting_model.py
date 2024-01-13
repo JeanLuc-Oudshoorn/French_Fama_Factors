@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
+from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score)
 from imblearn.metrics import specificity_score
@@ -265,11 +266,11 @@ class WeeklyFinancialForecastingModel:
                                            self.data[self.outcome_vars[1] + '_VOLUME']) / \
                                           (self.data[self.outcome_vars[2] + '_VOLUME'] +
                                            self.data[self.outcome_vars[3] + '_VOLUME'])
-        elif self.series_diff == 0:
+        elif self.series_diff == 1:
             self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]]
             self.data['OUTCOME_VOLUME'] = self.data[self.outcome_vars[0] + '_VOLUME']
         else:
-            raise ValueError('Invalid series_diff value! Must be 0, 2 or 4.')
+            raise ValueError('Invalid series_diff value! Must be 1, 2 or 4.')
 
         # Drop all other columns with 'VOLUME' in their names
         volume_columns = self.data.filter(like='VOLUME').columns
@@ -516,10 +517,12 @@ class WeeklyFinancialForecastingModel:
             for seed in range(self.num_rounds):
 
                 # Initialize basic model
-                rf = RandomForestClassifier(random_state=seed,
-                                            n_jobs=-1,
-                                            max_features=max_features,
-                                            n_estimators=n_estimators)
+                rf = LGBMClassifier(seed=seed,
+                                    bagging_seed=seed,
+                                    num_threads=-1,
+                                    bagging_fraction=1.0,
+                                    bagging_freq=10,
+                                    num_boost_round=n_estimators)
 
                 # Timesplit train- and test data
                 train = self.data[(self.data.index < timesplit) &
@@ -611,7 +614,7 @@ class WeeklyFinancialForecastingModel:
 
             # Print ratio positives in the train- & test set
             print(f"Ratio positives (full {name} set):",
-                  round(frame['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
+                  round(frame[frame.index.year >= 2001]['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
 
         # Filter the data for current date
         self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
@@ -694,8 +697,8 @@ class WeeklyFinancialForecastingModel:
                 print(f'Accuracy for predictions with probability {sign} {val}%: {accuracy_prob:.4f}', '\n')
 
         if perform_sensitivity_test:
-            sensitivity_test([0.53, 0.55, 0.57, 0.59], ['53', '55', '57', '59'], True)
-            sensitivity_test([0.47, 0.45, 0.43, 0.41], ['47', '45', '43', '41'], False)
+            sensitivity_test([0.55, 0.6, 0.65, 0.7, 0.75], ['55', '60', '65', '70', '75'], True)
+            sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25], ['45', '40', '35', '30', '25'], False)
 
         print("Mean One-week forward probability:",
               round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
@@ -865,7 +868,7 @@ class WeeklyFinancialForecastingModel:
             sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
 
             # Extract the top two configurations
-            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[1:3]]
+            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[2:4]]
 
             # Increment test period
             test_period = [year + validation_years for year in period]

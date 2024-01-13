@@ -4,10 +4,9 @@ import pickle
 import pandas as pd
 import seaborn as sns
 from scipy.stats import ttest_ind
-from statsmodels.stats.multitest import multipletests
+from sklearn.calibration import calibration_curve
 import matplotlib.pyplot as plt
 import os
-import re
 
 
 # TODO: random lengths for technical indicators
@@ -108,16 +107,16 @@ def build_custom_random_config():
 
 def build_nasdaq_random_config():
     # Define the options for each configuration
-    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'FUT', 'NSDQFUT',
+    features_options = ['RSI', 'APO', 'CG', 'STDEV', 'SKEW', 'KURT', 'ZSCORE', 'NSDQFUT', 'FUT',
                         'DEMA', 'CFO', 'ER', 'MA_CROSS', 'DRAWD', 'DRAWU', 'WOY']
-    columns_options = ['OUTCOME_VOLUME', 'VIX']
+    columns_options = ['OUTCOME_VOLUME', 'VIX']  # VIX
     fred_series_options = ['EXPINF10YR', 'EXPINF1YR', 'UNRATE', 'PSAVERT', 'SAHMCURRENT', 'REAINTRATREARAT1YE']
     continuous_series_options = ['DGS10', 'T10Y2Y', 'T10Y3M', 'USEPUINDXD', 'AAAFF', 'DFF', 'AAA10Y', 'DTP30A28']
     sentiment_options = ['BULLISH', 'BEARISH']
 
     # Generate random configurations
     extra_features_list = list(np.random.choice(features_options, np.random.randint(0, 6), replace=False))
-    columns_to_drop = ['NDQF', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(0, 3), replace=False))
+    columns_to_drop = ['NDQF', 'SP500', 'SP500F'] + list(np.random.choice(columns_options, np.random.randint(0, 3), replace=False))
     ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
     fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
     continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 5), replace=False))
@@ -252,6 +251,63 @@ def visual_results_analysis(name, save=True):
             os.makedirs(f'../../figures/{name}/')
 
         plt.savefig(f'../../figures/{name}/{name}_result.png')
+    plt.show()
+
+
+def custom_calibration_curve(name, save=True):
+
+    df = pd.read_csv(f'../../results/{name}/{name}_output.csv')
+
+    # Define the number of bins for confidence levels
+    num_bins = 10
+
+    # Create bins for confidence levels
+    bins = np.linspace(0, 1, num_bins + 1)
+
+    # Add a new column to the DataFrame indicating the confidence level bin for each prediction
+    df['ConfidenceLevel'] = pd.cut(df['MEAN_PRED_PROBA'], bins=bins, labels=False)
+
+    # Calculate the calibration curve
+    prob_true, prob_pred = calibration_curve(df['OUTCOME_VAR_1_INDICATOR'], df['MEAN_PRED_PROBA'], n_bins=num_bins)
+
+    # Create the primary y-axis for the histogram
+    fig, ax2 = plt.subplots()
+
+    # Plot the semi-transparent histogram in the background
+    ax2.hist(df['MEAN_PRED_PROBA'], bins=bins, alpha=0.5, color='lightblue', label='Prediction Distribution', zorder=1)
+
+    # Set labels for the secondary y-axis
+    ax2.set_ylabel('Prediction Distribution', color='lightblue')
+    ax2.tick_params(axis='y', labelcolor='lightblue')
+
+    # Create the secondary y-axis for the calibration curve
+    ax1 = ax2.twinx()
+
+    # Plot the calibration curve on the secondary y-axis
+    ax1.plot(prob_pred, prob_true, marker='o', label='Calibration Curve', color='blue', zorder=2)
+
+    # Add a diagonal line for reference (perfect calibration)
+    ax1.plot([0, 1], [0, 1], linestyle='--', color='gray', label='Perfectly Calibrated', zorder=3)
+
+    # Add a horizontal line at y = 0.5 (baseline accuracy)
+    ax1.axhline(y=0.5, color='r', linestyle='--', label='Baseline Accuracy (y=0.5)', zorder=4)
+
+    # Set labels and title for the secondary y-axis
+    ax1.set_xlabel('Mean Predicted Probability')
+    ax1.set_ylabel('Proportion of True Positives', color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+    ax1.set_title('Calibration Curve with Prediction Distribution')
+
+    # Add a grid to the secondary y-axis
+    ax1.grid(True, linestyle='--', alpha=0.7)
+
+    # Show legend for both axes
+    ax1.legend(loc='upper left')
+    ax2.legend(loc='upper right')
+
+    # Show the plot
+    if save:
+        plt.savefig(f'../../figures/{name}/{name}_calibration_curve')
     plt.show()
 
 

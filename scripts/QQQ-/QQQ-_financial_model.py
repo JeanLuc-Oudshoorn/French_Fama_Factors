@@ -7,7 +7,7 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_nasdaq_random_config() for _ in range(40)]
+random_configs = [build_nasdaq_random_config() for _ in range(60)]
 
 # Add the best configurations from the QQQ model
 feature_configs = random_configs
@@ -17,31 +17,32 @@ for configuration in feature_configs:
     print(configuration)
 
 # Initialize the class with required arguments
-model = WeeklyFinancialForecastingModel(log_path='logs/QQQ/QQQ_output_log_search.txt',
+# -- original models only had VIX not NVX
+model = WeeklyFinancialForecastingModel(log_path='logs/QQQ-/QQQ-_output_log_search.txt',
                                         stocks_list=['SPY', 'QQQ', '^NDX', '^GSPC',
-                                                     '^VIX',  'ES=F', 'NQ=F'],  # ^VVIX, ^MOVE
+                                                     '^VXN',  'NQ=F'],  # ^VVIX, ^MOVE, ^VIX
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',
                                         date_name='DATE',
                                         col_names=['DATE', 'SPY', 'QQQ', 'NDQ', 'SP500',
-                                                   'VIX', 'SP500F', 'NDQF'],
+                                                   'NVIX', 'NDQF'],
                                         columns_to_drop=[],
-                                        outcome_vars=['QQQ', 'SPY'],
-                                        series_diff=2,
+                                        outcome_vars=['QQQ'],
+                                        series_diff=1,
                                         fred_series=[],
                                         continuous_series=[],
-                                        num_rounds=10,
+                                        num_rounds=20,
                                         test_start_date='2011-01-01',
-                                        output_path='results/QQQ/QQQ_output.csv')
+                                        output_path='results/QQQ-/QQQ-_output.csv')
 
 # Run the model with the different feature configurations
 best_two, results = model.dynamically_optimize_model(feature_configs)
 
 # Open the file in write mode
-with open('logs/QQQ/QQQ_best_configs_auto.py', 'w') as f:
+with open('logs/QQQ-/QQQ-_best_configs_auto.py', 'w') as f:
     # Write the best_configs list to the file
     f.write('best_configs = ' + pprint.pformat(best_two))
 
 # Save the results dictionary as a pickle file
-with open('results/QQQ/QQQ_results.pkl', 'wb') as f:
+with open('results/QQQ-/QQQ-_results.pkl', 'wb') as f:
     pickle.dump(results, f)

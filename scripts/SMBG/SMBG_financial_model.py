@@ -7,7 +7,7 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_custom_random_config() for _ in range(50)]
+random_configs = [build_custom_random_config() for _ in range(40)]
 
 # Add the best configurations from the SMBG model
 feature_configs = random_configs
@@ -30,7 +30,7 @@ model = WeeklyFinancialForecastingModel(log_path='logs/SMBG/SMBG_output_log_sear
                                         series_diff=2,
                                         fred_series=[],
                                         continuous_series=[],
-                                        num_rounds=20,
+                                        num_rounds=10,
                                         test_start_date='2011-01-01',
                                         output_path='results/SMBG/SMBG_output.csv')
 
