@@ -57,7 +57,7 @@ sys.stdout = log_file
 all_names = os.listdir('results')
 
 # Filter the list to only include directories
-model_names = [name for name in all_names if os.path.isdir(os.path.join('results', name))]
+model_names = [name for name in all_names if os.path.isdir(os.path.join('results', name)) and 'QQQ' not in name]
 
 # Get the most recent Friday
 today = datetime.today()
