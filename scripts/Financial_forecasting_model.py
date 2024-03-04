@@ -1,7 +1,6 @@
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
-from lightgbm import LGBMClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score)
 from imblearn.metrics import specificity_score
@@ -253,7 +252,7 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def define_outcome_var(self):
+    def define_outcome_var(self, drawdown_tol: float = 0.0045):
         # Define outcome variable
         if self.series_diff == 2:
             self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]] - self.data[self.outcome_vars[1]]
@@ -278,17 +277,20 @@ class WeeklyFinancialForecastingModel:
         self.data.drop(columns=volume_columns, inplace=True)
 
         # Shift outcome variable to prevent predicting on concurrent information
-        self.data['OUTCOME_VAR_1'] = self.data['OUTCOME_VAR'].shift(-1)
+        self.data['OUTCOME_VAR_1'] = self.data['OUTCOME_VAR'].shift(-12)
 
-        # Fill last value
-        self.data.iloc[-1, self.data.columns.get_loc('OUTCOME_VAR_1')] = 1
+        # Calculate cumulative log returns over the next 16 weeks
+        for var in ['OUTCOME_VAR', 'OUTCOME_VAR_1']:
+            self.data[f'CUMSUM_{var}'] = self.data[var].cumsum()
 
-        # Create indicator outcome for classification
-        self.data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.data['OUTCOME_VAR_1'] >= 0, 1, 0)
+        # Check if drawdown is more than drawdown_tol (default 4.5%)
+        self.data['DRAWDOWN'] = self.data['CUMSUM_OUTCOME_VAR_1'].rolling(12).min()
+        self.data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.data['DRAWDOWN'] <
+                                                        self.data['CUMSUM_OUTCOME_VAR'] - drawdown_tol, 1, 0)
 
         # Save train period
         self.train = self.data[self.data.index < (pd.to_datetime(self.test_start_date) +
-                                                  pd.Timedelta(days=365*3)).strftime('%Y-%m-%d')]
+                                                  pd.Timedelta(days=365 * 3)).strftime('%Y-%m-%d')]
 
         return self.data
 
@@ -384,7 +386,8 @@ class WeeklyFinancialForecastingModel:
             self.data.set_index(self.date_name, inplace=True)
 
         # Create list of predictors
-        to_exclude = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR'] + features_no_ma
+        outcomes = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR']
+        to_exclude = [f'CUMSUM_{var}' for var in outcomes] + ['DRAWDOWN'] + outcomes + features_no_ma
         all_predictors = [var for var in self.data.columns if var not in to_exclude]
 
         # Create differences
@@ -507,7 +510,8 @@ class WeeklyFinancialForecastingModel:
 
         # Define dummy variables
         pred_vars = [var for var in self.data.columns if var not in
-                     ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR']]
+                     (['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR', 'DRAWDOWN'] +
+                      [f'CUMSUM_{var}' for var in ['OUTCOME_VAR_1', 'OUTCOME_VAR']])]
 
         if not exclude_base_outcome_var:
             pred_vars = pred_vars + ['OUTCOME_VAR']
@@ -517,12 +521,9 @@ class WeeklyFinancialForecastingModel:
             for seed in range(self.num_rounds):
 
                 # Initialize basic model
-                rf = LGBMClassifier(seed=seed,
-                                    bagging_seed=seed,
-                                    num_threads=-1,
-                                    bagging_fraction=1.0,
-                                    bagging_freq=10,
-                                    num_boost_round=n_estimators)
+                rf = RandomForestClassifier(random_state=seed,
+                                            n_jobs=-1,
+                                            n_estimators=n_estimators)
 
                 # Timesplit train- and test data
                 train = self.data[(self.data.index < timesplit) &
@@ -586,7 +587,8 @@ class WeeklyFinancialForecastingModel:
         return self.data
 
     def final_evaluation(self, bal_acc_list: list, save=False, update=False, perform_sensitivity_test=False,
-                         expanding_mean=False, test_date_pairs=False, multiple_models=False, bal_acc_switch=True):
+                         expanding_mean=False, test_date_pairs=False, multiple_models=False, bal_acc_switch=True,
+                         save_future_preds=False):
 
         if multiple_models:
             self.data = pd.concat([self.intermediate_data, self.data], axis=1)
@@ -615,6 +617,10 @@ class WeeklyFinancialForecastingModel:
             # Print ratio positives in the train- & test set
             print(f"Ratio positives (full {name} set):",
                   round(frame[frame.index.year >= 2001]['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
+
+        # Extract future predictions
+        if save_future_preds:
+            self.future_preds = self.data[self.data.index > self.current_date]
 
         # Filter the data for current date
         self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
@@ -719,7 +725,7 @@ class WeeklyFinancialForecastingModel:
 
                 # TODO: May want to set back to balanced accuracy
                 # Calculate balanced accuracy
-                bal_acc = precision_score(y_test, y_pred)
+                bal_acc = balanced_accuracy_score(y_test, y_pred)
 
                 # Print results
                 bal_acc_list.append(bal_acc)
@@ -909,6 +915,7 @@ class WeeklyFinancialForecastingModel:
 
         # Perform a final evaluation with date pairs
         self.final_evaluation(save=True,
+                              save_future_preds=True,
                               perform_sensitivity_test=True,
                               expanding_mean=False,
                               test_date_pairs=True,
@@ -969,7 +976,3 @@ class WeeklyFinancialForecastingModel:
                               bal_acc_list=[])
         self.close_log()
         self.print_balanced_accuracy()
-
-# TODO: Write more asserts
-
-# TODO: Pass on best config in previous period
