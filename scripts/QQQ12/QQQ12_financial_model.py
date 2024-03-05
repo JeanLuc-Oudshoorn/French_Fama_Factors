@@ -7,7 +7,7 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_nasdaq_random_config() for _ in range(20)]
+random_configs = [build_nasdaq_random_config() for _ in range(3)]
 
 # Add the best configurations from the QQQ model
 feature_configs = random_configs
@@ -28,7 +28,7 @@ model = WeeklyFinancialForecastingModel(log_path='logs/QQQ12/QQQ12_output_log_se
                                         series_diff=1,
                                         fred_series=[],
                                         continuous_series=[],
-                                        num_rounds=10,
+                                        num_rounds=3,
                                         test_start_date='2011-01-01',
                                         output_path='results/QQQ12/QQQ12_output.csv')
 

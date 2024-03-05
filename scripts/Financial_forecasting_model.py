@@ -2,7 +2,7 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score)
+from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score, confusion_matrix)
 from imblearn.metrics import specificity_score
 from sklearn.inspection import permutation_importance
 import pandas_datareader.data as web
@@ -82,7 +82,7 @@ class WeeklyFinancialForecastingModel:
 
         # Resample all columns to weekly frequency, using the mean
         self.data.set_index(self.date_name, inplace=True)
-        self.data = self.data.apply(lambda x: x.resample(self.resampling_day).mean())
+        self.data = self.data.apply(lambda x: x.resample(self.resampling_day).sum())
         self.data.reset_index(inplace=True)
 
         assert isinstance(self.data, pd.DataFrame), "Data is not a pandas dataframe"
@@ -252,7 +252,7 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def define_outcome_var(self, drawdown_tol: float = 0.0045):
+    def define_outcome_var(self, drawdown_tol: float = 0.0005):
         # Define outcome variable
         if self.series_diff == 2:
             self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]] - self.data[self.outcome_vars[1]]
@@ -266,7 +266,7 @@ class WeeklyFinancialForecastingModel:
                                           (self.data[self.outcome_vars[2] + '_VOLUME'] +
                                            self.data[self.outcome_vars[3] + '_VOLUME'])
         elif self.series_diff == 1:
-            self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]]
+            # self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]]
             self.data['OUTCOME_VOLUME'] = self.data[self.outcome_vars[0] + '_VOLUME']
         else:
             raise ValueError('Invalid series_diff value! Must be 1, 2 or 4.')
@@ -276,17 +276,33 @@ class WeeklyFinancialForecastingModel:
         volume_columns = volume_columns.drop('OUTCOME_VOLUME')
         self.data.drop(columns=volume_columns, inplace=True)
 
-        # Shift outcome variable to prevent predicting on concurrent information
-        self.data['OUTCOME_VAR_1'] = self.data['OUTCOME_VAR'].shift(-12)
+        # ================= MESS =======================
+        self.daily_data['OUTCOME_VAR'] = self.daily_data['QQQ']
+        self.daily_data['OUTCOME_VAR_1'] = self.daily_data['OUTCOME_VAR'].shift(-60)
 
-        # Calculate cumulative log returns over the next 16 weeks
-        for var in ['OUTCOME_VAR', 'OUTCOME_VAR_1']:
-            self.data[f'CUMSUM_{var}'] = self.data[var].cumsum()
+        # Check if drawdown is more than drawdown_tol (default 5%)
+        self.daily_data['DRAWDOWN'] = self.daily_data['OUTCOME_VAR_1'].rolling(60).min()
+        self.daily_data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.daily_data['DRAWDOWN'] <
+                                                              0.95 * self.daily_data['OUTCOME_VAR'],
+                                                              1, 0)
 
-        # Check if drawdown is more than drawdown_tol (default 4.5%)
-        self.data['DRAWDOWN'] = self.data['CUMSUM_OUTCOME_VAR_1'].rolling(12).min()
-        self.data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.data['DRAWDOWN'] <
-                                                        self.data['CUMSUM_OUTCOME_VAR'] - drawdown_tol, 1, 0)
+        # Join data together
+        self.data = pd.merge(self.data, self.daily_data, on=self.date_name, how='left')
+        self.data['OUTCOME_VAR_1_INDICATOR'] = self.data['OUTCOME_VAR_1_INDICATOR'].ffill()
+
+        # ================= MESS =======================
+        #
+        # # Shift outcome variable to prevent predicting on concurrent information
+        # self.data['OUTCOME_VAR_1'] = self.data['OUTCOME_VAR'].shift(-12)
+        #
+        # # Calculate cumulative log returns over the next 16 weeks
+        # for var in ['OUTCOME_VAR', 'OUTCOME_VAR_1']:
+        #     self.data[f'CUMSUM_{var}'] = self.data[var].cumsum()
+        #
+        # # Check if drawdown is more than drawdown_tol (default 5%)
+        # self.data['DRAWDOWN'] = self.data['CUMSUM_OUTCOME_VAR_1'].rolling(12).min()
+        # self.data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.data['DRAWDOWN'] <
+        #                                                 (self.data['CUMSUM_OUTCOME_VAR'] - drawdown_tol), 1, 0)
 
         # Save train period
         self.train = self.data[self.data.index < (pd.to_datetime(self.test_start_date) +
@@ -482,8 +498,8 @@ class WeeklyFinancialForecastingModel:
             # Create year
             self.data['YEAR'] = self.data.index.year
 
-        # Drop missing values
-        self.data.dropna(inplace=True)
+        # Drop missing values except for the last 20 rows (because we are predicting 16 weeks forward)
+        self.data = self.data.dropna(subset=[var for var in self.data.columns if var not in to_exclude])
 
         # Make a copy to fix fragmentation issues
         self.data = self.data.copy()
@@ -555,12 +571,17 @@ class WeeklyFinancialForecastingModel:
                 y_pred_proba = rf.predict_proba(X_test)
 
                 # Add predictions to dataframe for each seed
-                self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                 pd.DateOffset(months=3)), f'REAL_PRED_CLS_{seed}'] = y_pred
+                try:
+                    self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
+                                                     pd.DateOffset(months=3)), f'REAL_PRED_CLS_{seed}'] = y_pred
 
-                self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                 pd.DateOffset(months=3)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
-                    y_pred_proba[:, 1]
+                    self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
+                                                     pd.DateOffset(months=3)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
+                        y_pred_proba[:, 1]
+                except:
+                    print("\nY_PRED_PROBA\n:", y_pred_proba)
+                    print("\nY_PRED\n:", y_pred)
+                    continue
 
                 # Calculate feature importance for last seed to evaluate
                 if perm_feat:
@@ -651,6 +672,7 @@ class WeeklyFinancialForecastingModel:
         rec = recall_score(y_test, y_pred)
         prec = precision_score(y_test, y_pred)
         spec = specificity_score(y_test, y_pred)
+        cm = confusion_matrix(y_test, y_pred)
 
         # Full period classification results
         print("FULL PERIOD:")
@@ -702,9 +724,23 @@ class WeeklyFinancialForecastingModel:
                 print(f'Num observations with probability {sign} {val}%: {len(prob_rows)}')
                 print(f'Accuracy for predictions with probability {sign} {val}%: {accuracy_prob:.4f}', '\n')
 
+        # Define function to print confusion matrix as text
+        def print_confusion_matrix(cm: confusion_matrix):
+            """
+            Prints confusion matrix as text, adding labels.
+            """
+            # Convert confusion matrix to string
+            matrix_str = np.array2string(cm, separator=', ',
+                                         formatter={'int': lambda x: f'{x:4d}'})
+            # Print class names
+            print(' ' * 6 + ' '.join([f'{name:4s}' for name in ['No Drawdown', 'Drawdown']]))
+            # Print confusion matrix
+            print(matrix_str)
+
         if perform_sensitivity_test:
             sensitivity_test([0.55, 0.6, 0.65, 0.7, 0.75], ['55', '60', '65', '70', '75'], True)
             sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25], ['45', '40', '35', '30', '25'], False)
+            print_confusion_matrix(cm)
 
         print("Mean One-week forward probability:",
               round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
@@ -967,6 +1003,7 @@ class WeeklyFinancialForecastingModel:
                              perm_feat=False, multiple_models=mult_boolean)
 
         self.final_evaluation(save=False,
+                              save_future_preds=True,
                               update=True,
                               perform_sensitivity_test=True,
                               expanding_mean=True,
