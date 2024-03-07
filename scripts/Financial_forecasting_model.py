@@ -256,18 +256,21 @@ class WeeklyFinancialForecastingModel:
     def define_outcome_var(self, drawdown_tol: float = 0.0005):
         # Define outcome variable
         if self.series_diff == 2:
-            self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]] - self.data[self.outcome_vars[1]]
+            self.daily_data['OUTCOME_VAR'] = (self.daily_data[self.outcome_vars[0]] -
+                                              self.daily_data[self.outcome_vars[1]])
             self.data['OUTCOME_VOLUME'] = (self.data[self.outcome_vars[0] + '_VOLUME'] /
                                            self.data[self.outcome_vars[1] + '_VOLUME'])
         elif self.series_diff == 4:
-            self.data['OUTCOME_VAR'] = (self.data[self.outcome_vars[0]] + self.data[self.outcome_vars[1]]) - \
-                                       (self.data[self.outcome_vars[2]] + self.data[self.outcome_vars[3]])
+            self.daily_data['OUTCOME_VAR'] = (self.daily_data[self.outcome_vars[0]] +
+                                              self.daily_data[self.outcome_vars[1]]) - \
+                                             (self.daily_data[self.outcome_vars[2]] +
+                                              self.daily_data[self.outcome_vars[3]])
             self.data['OUTCOME_VOLUME'] = (self.data[self.outcome_vars[0] + '_VOLUME'] +
                                            self.data[self.outcome_vars[1] + '_VOLUME']) / \
                                           (self.data[self.outcome_vars[2] + '_VOLUME'] +
                                            self.data[self.outcome_vars[3] + '_VOLUME'])
         elif self.series_diff == 1:
-            # self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]]
+            self.daily_data['OUTCOME_VAR'] = self.daily_data[self.outcome_vars[0]]
             self.data['OUTCOME_VOLUME'] = self.data[self.outcome_vars[0] + '_VOLUME']
         else:
             raise ValueError('Invalid series_diff value! Must be 1, 2 or 4.')
@@ -277,8 +280,7 @@ class WeeklyFinancialForecastingModel:
         volume_columns = volume_columns.drop('OUTCOME_VOLUME')
         self.data.drop(columns=volume_columns, inplace=True)
 
-        # TODO: Fix QQQ later
-        self.daily_data['OUTCOME_VAR'] = self.daily_data[self.outcome_vars[0]]
+        # Shift future observations forward to create outcome
         self.daily_data['OUTCOME_VAR_1'] = self.daily_data['OUTCOME_VAR'].shift(-60)
 
         # Check if drawdown is more than drawdown_tol (default 4%)
