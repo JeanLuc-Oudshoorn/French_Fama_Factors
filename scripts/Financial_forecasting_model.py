@@ -1,7 +1,7 @@
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
-from lightgbm import LGBMClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score, confusion_matrix)
 from imblearn.metrics import specificity_score
 from sklearn.inspection import permutation_importance
@@ -43,6 +43,7 @@ class WeeklyFinancialForecastingModel:
         self.cache = None
         self.data_dict_fred = None
         self.data_dict_cont = None
+        self.future_preds = None
         self.current_date = pd.to_datetime('today')
         self.read_data()
 
@@ -536,9 +537,9 @@ class WeeklyFinancialForecastingModel:
             for seed in range(self.num_rounds):
 
                 # Initialize basic model
-                rf = LGBMClassifier(random_state=seed,
-                                    n_jobs=-1,
-                                    n_estimators=n_estimators)
+                rf = RandomForestClassifier(random_state=seed,
+                                            n_jobs=-1,
+                                            n_estimators=n_estimators)
 
                 # Timesplit train- and test data
                 train = self.data[(self.data.index < timesplit) &
@@ -640,10 +641,13 @@ class WeeklyFinancialForecastingModel:
 
         # Extract future predictions
         if save_future_preds:
-            self.future_preds = self.data[self.data.index > (self.current_date - pd.Timedelta(weeks=12))]
+            self.future_preds = self.data.iloc[-12:].copy()
+            time_cut = (self.current_date - pd.Timedelta(weeks=12))
+        else:
+            time_cut = self.current_date
 
         # Filter the data for current date
-        self.data = self.data[self.data.index <= (self.current_date - pd.Timedelta(weeks=12))]\
+        self.data = self.data[self.data.index <= time_cut]\
             .dropna(subset=['OUTCOME_VAR_1_INDICATOR',
                             'MEAN_PRED_CLS',
                             'MEAN_PRED_PROBA'])
@@ -910,7 +914,7 @@ class WeeklyFinancialForecastingModel:
             sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
 
             # Extract the third and fourth configuration
-            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[1:3]]
+            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[:2]]
 
             # Increment test period
             test_period = [year + validation_years for year in period]
