@@ -400,7 +400,7 @@ class WeeklyFinancialForecastingModel:
         self.data.drop(columns=columns_to_drop, inplace=True)
 
         # Only set DATE back as index if it isn't already
-        if not self.data.index.name == self.date_name:
+        if not isinstance(self.data.index, pd.DatetimeIndex):
             self.data.set_index(self.date_name, inplace=True)
 
         # Create list of predictors
@@ -663,6 +663,7 @@ class WeeklyFinancialForecastingModel:
         # Filter out rows with a different weekday than the most frequent one
         self.data = self.data[self.data.index.weekday == most_frequent_weekday]
 
+        # TODO: Evaluate part of training data when tuning?
         # Evaluate full predictions
         y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
         y_pred = self.data[self.data.index >= self.test_start_date]['MEAN_PRED_CLS']
@@ -749,7 +750,7 @@ class WeeklyFinancialForecastingModel:
             print_confusion_matrix(cm)
 
         print("Mean One-week forward probability:",
-              round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
+              round(self.future_preds.loc[self.future_preds.index[-1], selected_columns].mean(), 3), '\n')
 
         if bal_acc_switch:
             for seed in range(self.num_rounds):
