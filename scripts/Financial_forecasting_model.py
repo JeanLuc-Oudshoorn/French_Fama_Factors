@@ -18,10 +18,10 @@ warnings.filterwarnings('ignore')
 
 
 class WeeklyFinancialForecastingModel:
-    def __init__(self, log_path: str, stocks_list: list, returns_data_date_column: str,
-                 resampling_day: str, date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list,
-                 series_diff: int, fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str,
-                 output_path: str, start_date: str = '2000-01-01'):
+    def __init__(self, log_path: str, stocks_list: list, returns_data_date_column: str, resampling_day: str,
+                 date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list, series_diff: int,
+                 fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str, output_path: str,
+                 start_date: str = '2000-01-01', drawdown_mult: float = 0.96, drawdown_days: int = 60):
 
         self.log_path = log_path
         self.stocks_list = stocks_list
@@ -31,6 +31,8 @@ class WeeklyFinancialForecastingModel:
         self.col_names = col_names
         self.columns_to_drop = columns_to_drop
         self.outcome_vars = outcome_vars
+        self.drawdown_mult = drawdown_mult
+        self.drawdown_days = drawdown_days
         self.series_diff = series_diff
         self.fred_series = fred_series
         self.continuous_series = continuous_series
@@ -132,13 +134,13 @@ class WeeklyFinancialForecastingModel:
             # Set index and resample
             fred_data.set_index(self.date_name, inplace=True)
             resampled = fred_data.resample(self.resampling_day).first().reset_index()
+
+            # Forward fill resample data
             resampled.fillna(method='ffill', inplace=True)
 
             # Perform merge
             self.data = self.data.merge(resampled, how='outer', on=self.date_name)
 
-
-            # Forward fill the resampled data
         return self.data
 
     def add_continuous_data(self):
@@ -253,7 +255,7 @@ class WeeklyFinancialForecastingModel:
 
         return self.data
 
-    def define_outcome_var(self, drawdown_tol: float = 0.0005):
+    def define_outcome_var(self):
         # Define outcome variable
         if self.series_diff == 2:
             self.daily_data['OUTCOME_VAR'] = (self.daily_data[self.outcome_vars[0]] -
@@ -281,12 +283,12 @@ class WeeklyFinancialForecastingModel:
         self.data.drop(columns=volume_columns, inplace=True)
 
         # Shift future observations forward to create outcome
-        self.daily_data['OUTCOME_VAR_1'] = self.daily_data['OUTCOME_VAR'].shift(-60)
+        self.daily_data['OUTCOME_VAR_1'] = self.daily_data['OUTCOME_VAR'].shift(-self.drawdown_days)
 
         # Check if drawdown is more than drawdown_tol (default 4%)
-        self.daily_data['DRAWDOWN'] = self.daily_data['OUTCOME_VAR_1'].rolling(60).min()
+        self.daily_data['DRAWDOWN'] = self.daily_data['OUTCOME_VAR_1'].rolling(self.drawdown_days).min()
         self.daily_data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.daily_data['DRAWDOWN'] <
-                                                              0.96 * self.daily_data['OUTCOME_VAR'],
+                                                              self.drawdown_mult * self.daily_data['OUTCOME_VAR'],
                                                               1, 0)
 
         # Join data together
@@ -379,7 +381,12 @@ class WeeklyFinancialForecastingModel:
                                         columns=[self.date_name])
 
             # Merge perc_diff_df with all_dates_df
-            perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on=self.date_name, how='left')
+            if not isinstance(self.data.index, pd.TimedeltaIndex):
+                join_var = self.date_name
+            else:
+                join_var = self.data.index
+
+            perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on=join_var, how='left')
 
             # Fill NaN values with the last observed value
             perc_diff_df[var_name].fillna(method='ffill', inplace=True)
@@ -617,7 +624,7 @@ class WeeklyFinancialForecastingModel:
             self.data = pd.concat([self.intermediate_data, self.data], axis=1)
 
         # If the date column is not the index yet, set it
-        if not self.data.index.name == self.date_name:
+        if not isinstance(self.data.index, pd.DatetimeIndex):
             self.data.set_index(self.date_name, inplace=True)
 
         # Define the pattern
@@ -643,8 +650,8 @@ class WeeklyFinancialForecastingModel:
 
         # Extract future predictions
         if save_future_preds:
-            self.future_preds = self.data.iloc[-12:].copy()
-            time_cut = (self.current_date - pd.Timedelta(weeks=12))
+            self.future_preds = self.data.iloc[-round(self.drawdown_days/5):].copy()
+            time_cut = (self.current_date - pd.Timedelta(weeks=round(self.drawdown_days/5)))
         else:
             time_cut = self.current_date
 
@@ -749,8 +756,9 @@ class WeeklyFinancialForecastingModel:
             sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25], ['45', '40', '35', '30', '25'], False)
             print_confusion_matrix(cm)
 
-        print("Mean One-week forward probability:",
-              round(self.future_preds.loc[self.future_preds.index[-1], selected_columns].mean(), 3), '\n')
+        if save_future_preds:
+            print("Mean One-week forward probability:",
+                  round(self.future_preds.loc[self.future_preds.index[-1], selected_columns].mean(), 3), '\n')
 
         if bal_acc_switch:
             for seed in range(self.num_rounds):
@@ -882,8 +890,8 @@ class WeeklyFinancialForecastingModel:
 
         return validation_periods
 
-    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3,
-                                   validation_start_year: int = 2011, end_year: int = 2024):
+    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 4,
+                                   validation_start_year: int = 2010, end_year: int = 2024):
 
         # Initiate validation periods
         validation_periods = self.create_validation_periods(validation_start_year, end_year, validation_years)
