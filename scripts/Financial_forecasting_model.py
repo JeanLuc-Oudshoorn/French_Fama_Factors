@@ -2,7 +2,8 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score, confusion_matrix)
+from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score,
+                             recall_score, confusion_matrix, brier_score_loss)
 from imblearn.metrics import specificity_score
 from sklearn.inspection import permutation_importance
 import pandas_datareader.data as web
@@ -197,6 +198,12 @@ class WeeklyFinancialForecastingModel:
             # Merge investor sentiment to indices
             self.data = self.data.merge(inv_sentiment, how='outer', on=self.date_name)
 
+            # Identify first three columns of the dataframe to drop_duplicates
+            subset = list(self.data.columns[:3])
+
+            # Drop duplicates where required
+            self.data.drop_duplicates(inplace=True, subset=subset)
+
         return self.data
 
     def add_shiller_cape(self, apply: bool = True):
@@ -214,7 +221,7 @@ class WeeklyFinancialForecastingModel:
             expanded_cape_data = cape_data.resample('D').first().reset_index()
 
             # Resample to get every day
-            expanded_cape_data = pd.merge(expanded_cape_data, self.daily_data, left_on='DATE',
+            expanded_cape_data = pd.merge(expanded_cape_data, self.daily_data, left_on=self.date_name,
                                           right_on=self.daily_data.index, how='outer')
 
             # Find days with missing values
@@ -239,12 +246,16 @@ class WeeklyFinancialForecastingModel:
                     1 + expanded_cape_data.loc[mask, 'cumulative_returns'])
 
             # Merge back to original data
-            self.data = pd.merge(self.data, expanded_cape_data[['DATE', 'CAPE']], on=self.date_name, how='left')
+            self.data = pd.merge(self.data, expanded_cape_data[[self.date_name, 'CAPE']], on=self.date_name, how='left')
 
     def fill_missing_values(self):
         # Set index
         self.data.sort_values(self.date_name, inplace=True)
         self.data.set_index(self.date_name, inplace=True)
+        self.data.index.name = self.date_name
+
+        # Drop last row if index is the same as the previous row
+        self.data = self.data.loc[self.data[self.outcome_vars[0]] != self.data[self.outcome_vars[0]].shift(-1)]
 
         # Put today's date as maximum allowed date
         self.data = self.data[(self.data.index >= self.start_date) &
@@ -380,19 +391,18 @@ class WeeklyFinancialForecastingModel:
                                                       end=self.daily_data.index.max()),
                                         columns=[self.date_name])
 
-            # Merge perc_diff_df with all_dates_df
-            if not isinstance(self.data.index, pd.TimedeltaIndex):
-                join_var = self.date_name
-            else:
-                join_var = self.data.index
-
-            perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on=join_var, how='left')
+            perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on=self.date_name, how='left')
 
             # Fill NaN values with the last observed value
             perc_diff_df[var_name].fillna(method='ffill', inplace=True)
 
+            # Merge perc_diff_df with all_dates_df
+            if isinstance(self.data.index, pd.DatetimeIndex):
+                self.data.index.name = self.date_name
+                self.data.reset_index(inplace=True)
+
             # Merge self.data and perc_diff_df on the date column
-            self.data = self.data.merge(perc_diff_df, how='left', on='DATE')
+            self.data = self.data.merge(perc_diff_df, how='left', on=self.date_name)
 
         if 'FUT' in extra_features_list:
             add_futures_data()
@@ -621,6 +631,7 @@ class WeeklyFinancialForecastingModel:
                          save_future_preds=False):
 
         if multiple_models:
+            self.intermediate_data.drop_duplicates(inplace=True)
             self.data = pd.concat([self.intermediate_data, self.data], axis=1)
 
         # If the date column is not the index yet, set it
@@ -766,17 +777,14 @@ class WeeklyFinancialForecastingModel:
                 y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
 
                 if multiple_models:
-                    row_mean = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_PROBA_CLS_{seed}']\
+                    y_prob = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_PROBA_CLS_{seed}']\
                         .mean(axis=1)
 
-                    # Determine y_pred
-                    y_pred = np.where(row_mean >= 0.5, 1, 0)
                 else:
-                    y_pred = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_CLS_{seed}']
+                    y_prob = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_PROBA_CLS_{seed}']
 
-                # TODO: May want to set back to balanced accuracy
                 # Calculate balanced accuracy
-                bal_acc = balanced_accuracy_score(y_test, y_pred)
+                bal_acc = brier_score_loss(y_test, y_prob)
 
                 # Print results
                 bal_acc_list.append(bal_acc)
@@ -921,8 +929,8 @@ class WeeklyFinancialForecastingModel:
                 results[str(i)] = self.run_model_with_configs(feature_configs=config, period=period,
                                                               multiple_models=False)
 
-            # Sort the results dictionary by the mean of the balanced accuracy list in descending order
-            sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
+            # Sort the results dictionary by the mean of the balanced accuracy list in ascending order (Brier score)
+            sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=False)
 
             # Extract the third and fourth configuration
             top_configs = [feature_configs[int(run)] for run, _ in sorted_results[:2]]
