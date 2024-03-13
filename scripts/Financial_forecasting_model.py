@@ -310,14 +310,14 @@ class WeeklyFinancialForecastingModel:
                              how='left')
 
         # Define the subset of the dataframe excluding the last 60 rows
-        subset = self.data.iloc[:-60]
+        subset = self.data.iloc[:-self.drawdown_days]
 
         # Forward-fill specified columns in the subset
         subset[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']] = \
             subset[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']].ffill()
 
         # Assign the modified subset back to the original dataframe
-        self.data.iloc[:-60] = subset
+        self.data.iloc[:-self.drawdown_days] = subset
 
         # Save train period
         self.train = self.data[self.data.index < (pd.to_datetime(self.test_start_date) +
