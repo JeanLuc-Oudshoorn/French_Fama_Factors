@@ -57,7 +57,7 @@ sys.stdout = log_file
 all_names = os.listdir('results')
 
 # Filter the list to only include directories
-model_names = [name for name in all_names if os.path.isdir(os.path.join('results', name))]
+model_names = [name for name in all_names if os.path.isdir(os.path.join('results', name)) and 'QQQ' not in name]
 
 # Get the most recent Friday
 today = datetime.today()
@@ -115,11 +115,17 @@ result.index = pd.to_datetime(result.index)
 # Convert the index of df_stocks dataframe to datetime
 df_stocks.index = pd.to_datetime(df_stocks.index)
 
+# Shift all observations up by one
+df_stocks_shifted = df_stocks.shift(-1)
+
+# Impute the bottom row with all 1s
+df_stocks_shifted.iloc[-1, :] = 1
+
 # Join the stocks data to the result dataframe
-result = result.join(df_stocks)
+result = result.join(df_stocks_shifted)
 
 # Create a new dataframe that contains the log returns of the four instruments
-log_returns = df_stocks[['Large Cap Value', 'Large Cap Growth', 'Small Cap Value', 'Small Cap Growth']]
+log_returns = df_stocks_shifted[['Large Cap Value', 'Large Cap Growth', 'Small Cap Value', 'Small Cap Growth']]
 
 # Find the column with the maximum value for each row
 best_instrument = log_returns.idxmax(axis=1)
@@ -180,7 +186,7 @@ def softmax(x):
 
 
 # Loop over the list of random seeds
-def meta_model(random_seeds, elm, hidden_size=20):
+def meta_model(random_seeds, elm, hidden_size=2000):
 
     # Initialize a list to store the prediction dataframes
     dfs = []
@@ -252,7 +258,7 @@ def meta_model(random_seeds, elm, hidden_size=20):
 
 
 # Run the model
-dfs = meta_model(random_seeds, elm=False)
+dfs = meta_model(random_seeds, elm=True)
 
 # Concatenate all the prediction dataframes along the column axis
 all_predictions = pd.concat(dfs, axis=1)

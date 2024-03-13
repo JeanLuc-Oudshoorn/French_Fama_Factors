@@ -17,31 +17,29 @@ for configuration in feature_configs:
     print(configuration)
 
 # Initialize the class with required arguments
-model = WeeklyFinancialForecastingModel(log_path='logs/QQQ/QQQ_output_log_search.txt',
-                                        stocks_list=['SPY', 'QQQ', '^NDX', '^GSPC',
-                                                     '^VIX',  'ES=F', 'NQ=F'],  # ^VVIX, ^MOVE
+model = WeeklyFinancialForecastingModel(log_path='logs/QQQ12/QQQ12_output_log_search.txt',
+                                        stocks_list=['QQQ', '^NDX', '^GSPC', '^VXN', 'NQ=F', 'DX=F', 'GC=F'],
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',
                                         date_name='DATE',
-                                        col_names=['DATE', 'SPY', 'QQQ', 'NDQ', 'SP500',
-                                                   'VIX', 'SP500F', 'NDQF'],
+                                        col_names=['DATE', 'QQQ', 'NDQ', 'SP500', 'VIX', 'NDQF', 'DXF', 'GF'],
                                         columns_to_drop=[],
-                                        outcome_vars=['QQQ', 'SPY'],
-                                        series_diff=2,
+                                        outcome_vars=['QQQ'],
+                                        series_diff=1,
                                         fred_series=[],
                                         continuous_series=[],
-                                        num_rounds=10,
+                                        num_rounds=20,
                                         test_start_date='2011-01-01',
-                                        output_path='results/QQQ/QQQ_output.csv')
+                                        output_path='results/QQQ12/QQQ12_output.csv')
 
 # Run the model with the different feature configurations
 best_two, results = model.dynamically_optimize_model(feature_configs)
 
 # Open the file in write mode
-with open('logs/QQQ/QQQ_best_configs_auto.py', 'w') as f:
+with open('logs/QQQ12/QQQ12_best_configs_auto.py', 'w') as f:
     # Write the best_configs list to the file
     f.write('best_configs = ' + pprint.pformat(best_two))
 
 # Save the results dictionary as a pickle file
-with open('results/QQQ/QQQ_results.pkl', 'wb') as f:
+with open('results/QQQ12/QQQ12_results.pkl', 'wb') as f:
     pickle.dump(results, f)

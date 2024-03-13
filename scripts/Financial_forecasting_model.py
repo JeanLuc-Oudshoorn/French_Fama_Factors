@@ -2,7 +2,8 @@ import pandas as pd
 import pandas_ta as ta
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score, recall_score)
+from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score,
+                             recall_score, confusion_matrix, brier_score_loss)
 from imblearn.metrics import specificity_score
 from sklearn.inspection import permutation_importance
 import pandas_datareader.data as web
@@ -18,10 +19,10 @@ warnings.filterwarnings('ignore')
 
 
 class WeeklyFinancialForecastingModel:
-    def __init__(self, log_path: str, stocks_list: list, returns_data_date_column: str,
-                 resampling_day: str, date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list,
-                 series_diff: int, fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str,
-                 output_path: str, start_date: str = '2000-01-01'):
+    def __init__(self, log_path: str, stocks_list: list, returns_data_date_column: str, resampling_day: str,
+                 date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list, series_diff: int,
+                 fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str, output_path: str,
+                 start_date: str = '2000-01-01', drawdown_mult: float = 0.96, drawdown_days: int = 60):
 
         self.log_path = log_path
         self.stocks_list = stocks_list
@@ -31,6 +32,8 @@ class WeeklyFinancialForecastingModel:
         self.col_names = col_names
         self.columns_to_drop = columns_to_drop
         self.outcome_vars = outcome_vars
+        self.drawdown_mult = drawdown_mult
+        self.drawdown_days = drawdown_days
         self.series_diff = series_diff
         self.fred_series = fred_series
         self.continuous_series = continuous_series
@@ -43,6 +46,7 @@ class WeeklyFinancialForecastingModel:
         self.cache = None
         self.data_dict_fred = None
         self.data_dict_cont = None
+        self.future_preds = None
         self.current_date = pd.to_datetime('today')
         self.read_data()
 
@@ -82,7 +86,7 @@ class WeeklyFinancialForecastingModel:
 
         # Resample all columns to weekly frequency, using the mean
         self.data.set_index(self.date_name, inplace=True)
-        self.data = self.data.apply(lambda x: x.resample(self.resampling_day).mean())
+        self.data = self.data.apply(lambda x: x.resample(self.resampling_day).sum())
         self.data.reset_index(inplace=True)
 
         assert isinstance(self.data, pd.DataFrame), "Data is not a pandas dataframe"
@@ -132,7 +136,7 @@ class WeeklyFinancialForecastingModel:
             fred_data.set_index(self.date_name, inplace=True)
             resampled = fred_data.resample(self.resampling_day).first().reset_index()
 
-            # Forward fill the resampled data
+            # Forward fill resample data
             resampled.fillna(method='ffill', inplace=True)
 
             # Perform merge
@@ -194,6 +198,12 @@ class WeeklyFinancialForecastingModel:
             # Merge investor sentiment to indices
             self.data = self.data.merge(inv_sentiment, how='outer', on=self.date_name)
 
+            # Identify first three columns of the dataframe to drop_duplicates
+            subset = list(self.data.columns[:3])
+
+            # Drop duplicates where required
+            self.data.drop_duplicates(inplace=True, subset=subset)
+
         return self.data
 
     def add_shiller_cape(self, apply: bool = True):
@@ -211,7 +221,7 @@ class WeeklyFinancialForecastingModel:
             expanded_cape_data = cape_data.resample('D').first().reset_index()
 
             # Resample to get every day
-            expanded_cape_data = pd.merge(expanded_cape_data, self.daily_data, left_on='DATE',
+            expanded_cape_data = pd.merge(expanded_cape_data, self.daily_data, left_on=self.date_name,
                                           right_on=self.daily_data.index, how='outer')
 
             # Find days with missing values
@@ -236,12 +246,16 @@ class WeeklyFinancialForecastingModel:
                     1 + expanded_cape_data.loc[mask, 'cumulative_returns'])
 
             # Merge back to original data
-            self.data = pd.merge(self.data, expanded_cape_data[['DATE', 'CAPE']], on=self.date_name, how='left')
+            self.data = pd.merge(self.data, expanded_cape_data[[self.date_name, 'CAPE']], on=self.date_name, how='left')
 
     def fill_missing_values(self):
         # Set index
         self.data.sort_values(self.date_name, inplace=True)
         self.data.set_index(self.date_name, inplace=True)
+        self.data.index.name = self.date_name
+
+        # Drop last row if index is the same as the previous row
+        self.data = self.data.loc[self.data[self.outcome_vars[0]] != self.data[self.outcome_vars[0]].shift(-1)]
 
         # Put today's date as maximum allowed date
         self.data = self.data[(self.data.index >= self.start_date) &
@@ -255,39 +269,59 @@ class WeeklyFinancialForecastingModel:
     def define_outcome_var(self):
         # Define outcome variable
         if self.series_diff == 2:
-            self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]] - self.data[self.outcome_vars[1]]
+            self.daily_data['OUTCOME_VAR'] = (self.daily_data[self.outcome_vars[0]] -
+                                              self.daily_data[self.outcome_vars[1]])
             self.data['OUTCOME_VOLUME'] = (self.data[self.outcome_vars[0] + '_VOLUME'] /
                                            self.data[self.outcome_vars[1] + '_VOLUME'])
         elif self.series_diff == 4:
-            self.data['OUTCOME_VAR'] = (self.data[self.outcome_vars[0]] + self.data[self.outcome_vars[1]]) - \
-                                       (self.data[self.outcome_vars[2]] + self.data[self.outcome_vars[3]])
+            self.daily_data['OUTCOME_VAR'] = (self.daily_data[self.outcome_vars[0]] +
+                                              self.daily_data[self.outcome_vars[1]]) - \
+                                             (self.daily_data[self.outcome_vars[2]] +
+                                              self.daily_data[self.outcome_vars[3]])
             self.data['OUTCOME_VOLUME'] = (self.data[self.outcome_vars[0] + '_VOLUME'] +
                                            self.data[self.outcome_vars[1] + '_VOLUME']) / \
                                           (self.data[self.outcome_vars[2] + '_VOLUME'] +
                                            self.data[self.outcome_vars[3] + '_VOLUME'])
-        elif self.series_diff == 0:
-            self.data['OUTCOME_VAR'] = self.data[self.outcome_vars[0]]
+        elif self.series_diff == 1:
+            self.daily_data['OUTCOME_VAR'] = self.daily_data[self.outcome_vars[0]]
             self.data['OUTCOME_VOLUME'] = self.data[self.outcome_vars[0] + '_VOLUME']
         else:
-            raise ValueError('Invalid series_diff value! Must be 0, 2 or 4.')
+            raise ValueError('Invalid series_diff value! Must be 1, 2 or 4.')
 
         # Drop all other columns with 'VOLUME' in their names
         volume_columns = self.data.filter(like='VOLUME').columns
         volume_columns = volume_columns.drop('OUTCOME_VOLUME')
         self.data.drop(columns=volume_columns, inplace=True)
 
-        # Shift outcome variable to prevent predicting on concurrent information
-        self.data['OUTCOME_VAR_1'] = self.data['OUTCOME_VAR'].shift(-1)
+        # Shift future observations forward to create outcome
+        self.daily_data['OUTCOME_VAR_1'] = self.daily_data['OUTCOME_VAR'].shift(-self.drawdown_days)
 
-        # Fill last value
-        self.data.iloc[-1, self.data.columns.get_loc('OUTCOME_VAR_1')] = 1
+        # Check if drawdown is more than drawdown_tol (default 4%)
+        self.daily_data['DRAWDOWN'] = self.daily_data['OUTCOME_VAR_1'].rolling(self.drawdown_days).min()
+        self.daily_data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.daily_data['DRAWDOWN'] <
+                                                              self.drawdown_mult * self.daily_data['OUTCOME_VAR'],
+                                                              1, 0)
 
-        # Create indicator outcome for classification
-        self.data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.data['OUTCOME_VAR_1'] >= 0, 1, 0)
+        # Join data together
+        self.data = pd.merge(self.data,
+                             self.daily_data[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']],
+                             left_index=True,
+                             right_index=True,
+                             how='left')
+
+        # Define the subset of the dataframe excluding the last 60 rows
+        subset = self.data.iloc[:-60]
+
+        # Forward-fill specified columns in the subset
+        subset[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']] = \
+            subset[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']].ffill()
+
+        # Assign the modified subset back to the original dataframe
+        self.data.iloc[:-60] = subset
 
         # Save train period
         self.train = self.data[self.data.index < (pd.to_datetime(self.test_start_date) +
-                                                  pd.Timedelta(days=365*3)).strftime('%Y-%m-%d')]
+                                                  pd.Timedelta(days=365 * 3)).strftime('%Y-%m-%d')]
 
         return self.data
 
@@ -357,14 +391,18 @@ class WeeklyFinancialForecastingModel:
                                                       end=self.daily_data.index.max()),
                                         columns=[self.date_name])
 
-            # Merge perc_diff_df with all_dates_df
             perc_diff_df = pd.merge(all_dates_df, perc_diff_df, on=self.date_name, how='left')
 
             # Fill NaN values with the last observed value
             perc_diff_df[var_name].fillna(method='ffill', inplace=True)
 
+            # Merge perc_diff_df with all_dates_df
+            if isinstance(self.data.index, pd.DatetimeIndex):
+                self.data.index.name = self.date_name
+                self.data.reset_index(inplace=True)
+
             # Merge self.data and perc_diff_df on the date column
-            self.data = self.data.merge(perc_diff_df, how='left', on='DATE')
+            self.data = self.data.merge(perc_diff_df, how='left', on=self.date_name)
 
         if 'FUT' in extra_features_list:
             add_futures_data()
@@ -379,11 +417,12 @@ class WeeklyFinancialForecastingModel:
         self.data.drop(columns=columns_to_drop, inplace=True)
 
         # Only set DATE back as index if it isn't already
-        if not self.data.index.name == self.date_name:
+        if not isinstance(self.data.index, pd.DatetimeIndex):
             self.data.set_index(self.date_name, inplace=True)
 
         # Create list of predictors
-        to_exclude = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR'] + features_no_ma
+        outcomes = ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR']
+        to_exclude = [f'CUMSUM_{var}' for var in outcomes] + ['DRAWDOWN'] + outcomes + features_no_ma
         all_predictors = [var for var in self.data.columns if var not in to_exclude]
 
         # Create differences
@@ -478,8 +517,8 @@ class WeeklyFinancialForecastingModel:
             # Create year
             self.data['YEAR'] = self.data.index.year
 
-        # Drop missing values
-        self.data.dropna(inplace=True)
+        # Drop missing values except for the last 20 rows (because we are predicting 16 weeks forward)
+        self.data = self.data.dropna(subset=[var for var in self.data.columns if var not in to_exclude])
 
         # Make a copy to fix fragmentation issues
         self.data = self.data.copy()
@@ -506,7 +545,8 @@ class WeeklyFinancialForecastingModel:
 
         # Define dummy variables
         pred_vars = [var for var in self.data.columns if var not in
-                     ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR']]
+                     (['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR', 'DRAWDOWN'] +
+                      [f'CUMSUM_{var}' for var in ['OUTCOME_VAR_1', 'OUTCOME_VAR']])]
 
         if not exclude_base_outcome_var:
             pred_vars = pred_vars + ['OUTCOME_VAR']
@@ -518,7 +558,6 @@ class WeeklyFinancialForecastingModel:
                 # Initialize basic model
                 rf = RandomForestClassifier(random_state=seed,
                                             n_jobs=-1,
-                                            max_features=max_features,
                                             n_estimators=n_estimators)
 
                 # Timesplit train- and test data
@@ -551,12 +590,17 @@ class WeeklyFinancialForecastingModel:
                 y_pred_proba = rf.predict_proba(X_test)
 
                 # Add predictions to dataframe for each seed
-                self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                 pd.DateOffset(months=3)), f'REAL_PRED_CLS_{seed}'] = y_pred
+                try:
+                    self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
+                                                     pd.DateOffset(months=3)), f'REAL_PRED_CLS_{seed}'] = y_pred
 
-                self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                 pd.DateOffset(months=3)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
-                    y_pred_proba[:, 1]
+                    self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
+                                                     pd.DateOffset(months=3)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
+                        y_pred_proba[:, 1]
+                except IndexError:
+                    print("\nY_PRED_PROBA\n:", y_pred_proba)
+                    print("\nY_PRED\n:", y_pred)
+                    continue
 
                 # Calculate feature importance for last seed to evaluate
                 if perm_feat:
@@ -583,13 +627,15 @@ class WeeklyFinancialForecastingModel:
         return self.data
 
     def final_evaluation(self, bal_acc_list: list, save=False, update=False, perform_sensitivity_test=False,
-                         expanding_mean=False, test_date_pairs=False, multiple_models=False, bal_acc_switch=True):
+                         expanding_mean=False, test_date_pairs=False, multiple_models=False, bal_acc_switch=True,
+                         save_future_preds=False):
 
         if multiple_models:
+            self.intermediate_data.drop_duplicates(inplace=True)
             self.data = pd.concat([self.intermediate_data, self.data], axis=1)
 
         # If the date column is not the index yet, set it
-        if not self.data.index.name == self.date_name:
+        if not isinstance(self.data.index, pd.DatetimeIndex):
             self.data.set_index(self.date_name, inplace=True)
 
         # Define the pattern
@@ -611,12 +657,20 @@ class WeeklyFinancialForecastingModel:
 
             # Print ratio positives in the train- & test set
             print(f"Ratio positives (full {name} set):",
-                  round(frame['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
+                  round(frame[frame.index.year >= 2001]['OUTCOME_VAR_1_INDICATOR'].mean(), 3), '\n')
+
+        # Extract future predictions
+        if save_future_preds:
+            self.future_preds = self.data.iloc[-round(self.drawdown_days/5):].copy()
+            time_cut = (self.current_date - pd.Timedelta(weeks=round(self.drawdown_days/5)))
+        else:
+            time_cut = self.current_date
 
         # Filter the data for current date
-        self.data = self.data[self.data.index <= self.current_date].dropna(subset=['OUTCOME_VAR_1_INDICATOR',
-                                                                                   'MEAN_PRED_CLS',
-                                                                                   'MEAN_PRED_PROBA'])
+        self.data = self.data[self.data.index <= time_cut]\
+            .dropna(subset=['OUTCOME_VAR_1_INDICATOR',
+                            'MEAN_PRED_CLS',
+                            'MEAN_PRED_PROBA'])
 
         # Count the occurrences of each weekday
         weekday_counts = self.data.index.weekday.value_counts()
@@ -627,6 +681,7 @@ class WeeklyFinancialForecastingModel:
         # Filter out rows with a different weekday than the most frequent one
         self.data = self.data[self.data.index.weekday == most_frequent_weekday]
 
+        # TODO: Evaluate part of training data when tuning?
         # Evaluate full predictions
         y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
         y_pred = self.data[self.data.index >= self.test_start_date]['MEAN_PRED_CLS']
@@ -642,6 +697,7 @@ class WeeklyFinancialForecastingModel:
         rec = recall_score(y_test, y_pred)
         prec = precision_score(y_test, y_pred)
         spec = specificity_score(y_test, y_pred)
+        cm = confusion_matrix(y_test, y_pred)
 
         # Full period classification results
         print("FULL PERIOD:")
@@ -654,7 +710,7 @@ class WeeklyFinancialForecastingModel:
         if test_date_pairs:
             # Create a list of one-year intervals
             date_list = pd.date_range(start=self.test_start_date,
-                                      end=(pd.to_datetime('today') + pd.DateOffset(years=1)).strftime('%Y-%m-%d'),
+                                      end=(self.current_date + pd.DateOffset(years=1)).strftime('%Y-%m-%d'),
                                       freq='YS').strftime('%Y-%m-%d').tolist()
 
             # Initialize an empty list to store the date pairs
@@ -693,12 +749,27 @@ class WeeklyFinancialForecastingModel:
                 print(f'Num observations with probability {sign} {val}%: {len(prob_rows)}')
                 print(f'Accuracy for predictions with probability {sign} {val}%: {accuracy_prob:.4f}', '\n')
 
-        if perform_sensitivity_test:
-            sensitivity_test([0.53, 0.55, 0.57, 0.59], ['53', '55', '57', '59'], True)
-            sensitivity_test([0.47, 0.45, 0.43, 0.41], ['47', '45', '43', '41'], False)
+        # Define function to print confusion matrix as text
+        def print_confusion_matrix(cm: confusion_matrix):
+            """
+            Prints confusion matrix as text, adding labels.
+            """
+            # Convert confusion matrix to string
+            matrix_str = np.array2string(cm, separator=', ',
+                                         formatter={'int': lambda x: f'{x:4d}'})
+            # Print class names
+            print(' ' * 6 + ' '.join([f'{name:4s}' for name in ['No Drawdown', 'Drawdown']]))
+            # Print confusion matrix
+            print(matrix_str, '\n')
 
-        print("Mean One-week forward probability:",
-              round(self.data.loc[self.data.index[-1], selected_columns].mean(), 3), '\n')
+        if perform_sensitivity_test:
+            sensitivity_test([0.55, 0.6, 0.65, 0.7, 0.75], ['55', '60', '65', '70', '75'], True)
+            sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25], ['45', '40', '35', '30', '25'], False)
+            print_confusion_matrix(cm)
+
+        if save_future_preds:
+            print("Mean One-week forward probability:",
+                  round(self.future_preds.loc[self.future_preds.index[-1], selected_columns].mean(), 3), '\n')
 
         if bal_acc_switch:
             for seed in range(self.num_rounds):
@@ -706,17 +777,14 @@ class WeeklyFinancialForecastingModel:
                 y_test = self.data[self.data.index >= self.test_start_date]['OUTCOME_VAR_1_INDICATOR']
 
                 if multiple_models:
-                    row_mean = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_PROBA_CLS_{seed}']\
+                    y_prob = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_PROBA_CLS_{seed}']\
                         .mean(axis=1)
 
-                    # Determine y_pred
-                    y_pred = np.where(row_mean >= 0.5, 1, 0)
                 else:
-                    y_pred = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_CLS_{seed}']
+                    y_prob = self.data[self.data.index >= self.test_start_date][f'REAL_PRED_PROBA_CLS_{seed}']
 
-                # TODO: May want to set back to balanced accuracy
                 # Calculate balanced accuracy
-                bal_acc = precision_score(y_test, y_pred)
+                bal_acc = brier_score_loss(y_test, y_prob)
 
                 # Print results
                 bal_acc_list.append(bal_acc)
@@ -830,8 +898,8 @@ class WeeklyFinancialForecastingModel:
 
         return validation_periods
 
-    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 3,
-                                   validation_start_year: int = 2011, end_year: int = 2024):
+    def dynamically_optimize_model(self, feature_configs: list, validation_years: int = 4,
+                                   validation_start_year: int = 2010, end_year: int = 2024):
 
         # Initiate validation periods
         validation_periods = self.create_validation_periods(validation_start_year, end_year, validation_years)
@@ -861,11 +929,11 @@ class WeeklyFinancialForecastingModel:
                 results[str(i)] = self.run_model_with_configs(feature_configs=config, period=period,
                                                               multiple_models=False)
 
-            # Sort the results dictionary by the mean of the balanced accuracy list in descending order
-            sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=True)
+            # Sort the results dictionary by the mean of the balanced accuracy list in ascending order (Brier score)
+            sorted_results = sorted(results.items(), key=lambda x: np.mean(x[1]), reverse=False)
 
-            # Extract the top two configurations
-            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[1:3]]
+            # Extract the third and fourth configuration
+            top_configs = [feature_configs[int(run)] for run, _ in sorted_results[:2]]
 
             # Increment test period
             test_period = [year + validation_years for year in period]
@@ -906,6 +974,7 @@ class WeeklyFinancialForecastingModel:
 
         # Perform a final evaluation with date pairs
         self.final_evaluation(save=True,
+                              save_future_preds=True,
                               perform_sensitivity_test=True,
                               expanding_mean=False,
                               test_date_pairs=True,
@@ -957,6 +1026,7 @@ class WeeklyFinancialForecastingModel:
                              perm_feat=False, multiple_models=mult_boolean)
 
         self.final_evaluation(save=False,
+                              save_future_preds=True,
                               update=True,
                               perform_sensitivity_test=True,
                               expanding_mean=True,
@@ -966,7 +1036,3 @@ class WeeklyFinancialForecastingModel:
                               bal_acc_list=[])
         self.close_log()
         self.print_balanced_accuracy()
-
-# TODO: Write more asserts
-
-# TODO: Pass on best config in previous period
