@@ -17,7 +17,7 @@ for configuration in feature_configs:
     print(configuration)
 
 # Initialize the class with required arguments
-model = WeeklyFinancialForecastingModel(log_path='logs/QQQ40/QQQ40_output_log_search.txt',
+model = WeeklyFinancialForecastingModel(log_path='logs/QQQ60/QQQ60_output_log_search.txt',
                                         stocks_list=['QQQ', '^NDX', '^GSPC', '^VXN', 'NQ=F', 'DX=F', 'GC=F'],
                                         returns_data_date_column='Date',
                                         resampling_day='W-Fri',
@@ -29,19 +29,19 @@ model = WeeklyFinancialForecastingModel(log_path='logs/QQQ40/QQQ40_output_log_se
                                         fred_series=[],
                                         continuous_series=[],
                                         num_rounds=20,
-                                        drawdown_mult=0.94,
-                                        drawdown_days=200,
+                                        drawdown_mult=0.925,
+                                        drawdown_days=300,
                                         test_start_date='2011-01-01',
-                                        output_path='results/QQQ40/QQQ40_output.csv')
+                                        output_path='results/QQQ60/QQQ60_output.csv')
 
 # Run the model with the different feature configurations
 best_two, results = model.dynamically_optimize_model(feature_configs)
 
 # Open the file in write mode
-with open('logs/QQQ40/QQQ40_best_configs_auto.py', 'w') as f:
+with open('logs/QQQ60/QQQ60_best_configs_auto.py', 'w') as f:
     # Write the best_configs list to the file
     f.write('best_configs = ' + pprint.pformat(best_two))
 
 # Save the results dictionary as a pickle file
-with open('results/QQQ40/QQQ40_results.pkl', 'wb') as f:
+with open('results/QQQ60/QQQ60_results.pkl', 'wb') as f:
     pickle.dump(results, f)

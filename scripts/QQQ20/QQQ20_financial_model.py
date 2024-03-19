@@ -29,7 +29,7 @@ model = WeeklyFinancialForecastingModel(log_path='logs/QQQ20/QQQ20_output_log_se
                                         fred_series=[],
                                         continuous_series=[],
                                         num_rounds=20,
-                                        drawdown_mult=0.94,
+                                        drawdown_mult=0.95,
                                         drawdown_days=100,
                                         test_start_date='2011-01-01',
                                         output_path='results/QQQ20/QQQ20_output.csv')
