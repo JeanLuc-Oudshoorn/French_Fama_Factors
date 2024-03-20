@@ -1,6 +1,8 @@
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
+import torch
+from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score,
                              recall_score, confusion_matrix, brier_score_loss)
@@ -556,9 +558,7 @@ class WeeklyFinancialForecastingModel:
             for seed in range(self.num_rounds):
 
                 # Initialize basic model
-                rf = RandomForestClassifier(random_state=seed,
-                                            n_jobs=-1,
-                                            n_estimators=n_estimators)
+                rf = TabNetClassifier(seed=seed)  # TODO: n_jobs=-1
 
                 # Timesplit train- and test data
                 train = self.data[(self.data.index < timesplit) &
@@ -576,6 +576,19 @@ class WeeklyFinancialForecastingModel:
                 y_train = train['OUTCOME_VAR_1_INDICATOR'].values
                 y_test = test['OUTCOME_VAR_1_INDICATOR'].values
 
+                # Convert X_train, X_test, y_train, and y_test to numpy arrays
+                if isinstance(rf, TabNetClassifier):
+                    X_train = np.array(X_train, dtype=float)
+                    X_test = np.array(X_test, dtype=float)
+                    y_train = np.array(y_train, dtype=int)
+                    y_test = np.array(y_test, dtype=int)
+
+                # Create model attributes for X and y (for debugging)
+                self.X_train = X_train
+                self.X_test = X_test
+                self.y_train = y_train
+                self.y_test = y_test
+
                 # Create option to weight samples by recency
                 if recency_weighted:
                     sw_train = np.linspace(1, 1.5, X_train.shape[0])
@@ -583,7 +596,7 @@ class WeeklyFinancialForecastingModel:
                     sw_train = np.repeat(1, X_train.shape[0])
 
                 # Train the model
-                rf.fit(X_train, y_train, sample_weight=sw_train)
+                rf.fit(X_train, y_train)  # TODO: sample_weight
 
                 # Predict on test data
                 y_pred = rf.predict(X_test)
@@ -763,8 +776,8 @@ class WeeklyFinancialForecastingModel:
             print(matrix_str, '\n')
 
         if perform_sensitivity_test:
-            sensitivity_test([0.55, 0.6, 0.65, 0.7, 0.75], ['55', '60', '65', '70', '75'], True)
-            sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25], ['45', '40', '35', '30', '25'], False)
+            sensitivity_test([0.55, 0.6, 0.65, 0.7, 0.75, 0.80], ['55', '60', '65', '70', '75', '80'], True)
+            sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25, 0.20], ['45', '40', '35', '30', '25', '20'], False)
             print_confusion_matrix(cm)
 
         if save_future_preds:
