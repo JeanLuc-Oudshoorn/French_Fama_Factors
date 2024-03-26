@@ -242,9 +242,9 @@ def visual_results_analysis(name, save=True):
     # Plot distribution of the results
     sns.kdeplot(x='acc', hue='period', data=molten, fill=True, common_norm=False)
     plt.axvline(x=0.500, color='black', linestyle='--')
-    plt.xlabel('Balanced Accuracy')
+    plt.xlabel('Brier Score')
     plt.ylabel('Density')
-    plt.title(f'Distribution of Precision by Forecasting Period')
+    plt.title(f'Distribution of Brier Score by Forecasting Period')
 
     # Save the plot
     if save:
@@ -306,6 +306,9 @@ def custom_calibration_curve(name, save=True):
     # Show legend for both axes
     ax1.legend(loc='upper left')
     ax2.legend(loc='upper right')
+
+    # Create the folder if it doesn't exist
+    os.makedirs(f'../../figures/{name}', exist_ok=True)
 
     # Show the plot
     if save:

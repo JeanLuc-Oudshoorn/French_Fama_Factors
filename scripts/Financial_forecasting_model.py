@@ -1,8 +1,6 @@
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
-import torch
-from pytorch_tabnet.tab_model import TabNetClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (accuracy_score, precision_score, balanced_accuracy_score,
                              recall_score, confusion_matrix, brier_score_loss)
@@ -558,7 +556,9 @@ class WeeklyFinancialForecastingModel:
             for seed in range(self.num_rounds):
 
                 # Initialize basic model
-                rf = TabNetClassifier(seed=seed)  # TODO: n_jobs=-1
+                rf = RandomForestClassifier(random_state=seed,
+                                            n_jobs=-1,
+                                            n_estimators=n_estimators)
 
                 # Timesplit train- and test data
                 train = self.data[(self.data.index < timesplit) &
@@ -577,7 +577,7 @@ class WeeklyFinancialForecastingModel:
                 y_test = test['OUTCOME_VAR_1_INDICATOR'].values
 
                 # Convert X_train, X_test, y_train, and y_test to numpy arrays
-                if isinstance(rf, TabNetClassifier):
+                if isinstance(rf, RandomForestClassifier):
                     X_train = np.array(X_train, dtype=float)
                     X_test = np.array(X_test, dtype=float)
                     y_train = np.array(y_train, dtype=int)
@@ -596,7 +596,7 @@ class WeeklyFinancialForecastingModel:
                     sw_train = np.repeat(1, X_train.shape[0])
 
                 # Train the model
-                rf.fit(X_train, y_train)  # TODO: sample_weight
+                rf.fit(X_train, y_train, sample_weight=sw_train)
 
                 # Predict on test data
                 y_pred = rf.predict(X_test)

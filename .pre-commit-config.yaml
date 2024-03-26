@@ -1,0 +1,15 @@
+repos:
+- repo: https://github.com/psf/black
+  rev: v22.3.0
+  hooks:
+  - id: black
+
+- repo: https://github.com/pycqa/flake8
+  rev: v4.0.1
+  hooks:
+  - id: flake8
+
+- repo: https://github.com/PyCQA/bandit
+  rev: v2.1.0
+  hooks:
+  - id: bandit
