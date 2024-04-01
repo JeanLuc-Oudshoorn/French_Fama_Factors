@@ -7,7 +7,7 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_nasdaq_random_config() for _ in range(40)]
+random_configs = [build_nasdaq_random_config() for _ in range(50)]
 
 # Add the best configurations from the QQQ model
 feature_configs = random_configs
