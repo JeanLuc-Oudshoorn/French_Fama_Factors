@@ -11,6 +11,7 @@ import yfinance as yf
 from typing import Union
 import sys
 from datetime import datetime
+import tqdm
 import warnings
 import re
 
@@ -551,73 +552,80 @@ class WeeklyFinancialForecastingModel:
         if not exclude_base_outcome_var:
             pred_vars = pred_vars + ['OUTCOME_VAR']
 
-        # Number of seeds to evaluate
-        for i, timesplit in enumerate(date_list):
-            for seed in range(self.num_rounds):
+        # Total iterations for progress bar calculation
+        total_iterations = len(date_list) * self.num_rounds
 
-                # Initialize basic model
-                rf = RandomForestClassifier(random_state=seed,
-                                            n_jobs=-1,
-                                            n_estimators=n_estimators)
+        # Wrap the outer loop with tqdm
+        with tqdm.tqdm(total=total_iterations, desc="Training Models") as pbar:
+            for i, timesplit in enumerate(date_list):
+                for seed in range(self.num_rounds):
 
-                # Timesplit train- and test data
-                train = self.data[(self.data.index < timesplit) &
-                                  (self.data.index >= pd.to_datetime(timesplit) - pd.DateOffset(years=train_years))]
-                test = self.data[(self.data.index >= timesplit) &
-                                 (self.data.index <= pd.to_datetime(timesplit) + pd.DateOffset(months=3))]
+                    # Initialize basic model
+                    rf = RandomForestClassifier(random_state=seed,
+                                                n_jobs=-1,
+                                                n_estimators=n_estimators)
 
-                # Assert that train and test sets are filtered correclty
-                assert isinstance(train.index, pd.DatetimeIndex), "Train index is not of type: pd.DatetimeIndex"
-                assert train.index.max() <= test.index.min(), "Test start date should be later than train end date"
+                    # Timesplit train- and test data
+                    train = self.data[(self.data.index < timesplit) &
+                                      (self.data.index >= pd.to_datetime(timesplit) - pd.DateOffset(years=train_years))]
+                    test = self.data[(self.data.index >= timesplit) &
+                                     (self.data.index <= pd.to_datetime(timesplit) + pd.DateOffset(months=3))]
 
-                # Skip to next iteration if X_test is empty
-                if test.empty:
-                    continue
+                    # Assert that train and test sets are filtered correclty
+                    assert isinstance(train.index, pd.DatetimeIndex), "Train index is not of type: pd.DatetimeIndex"
+                    assert train.index.max() <= test.index.min(), "Test start date should be later than train end date"
 
-                # Split into X and Y
-                X_train = train[pred_vars].values
-                X_test = test[pred_vars].values
-                y_train = train['OUTCOME_VAR_1_INDICATOR'].values
-                y_test = test['OUTCOME_VAR_1_INDICATOR'].values
+                    # Skip to next iteration if X_test is empty
+                    if test.empty:
+                        continue
 
-                # Convert X_train, X_test, y_train, and y_test to numpy arrays
-                if isinstance(rf, RandomForestClassifier):
-                    X_train = np.array(X_train, dtype=float)
-                    X_test = np.array(X_test, dtype=float)
-                    y_train = np.array(y_train, dtype=int)
-                    y_test = np.array(y_test, dtype=int)
+                    # Split into X and Y
+                    X_train = train[pred_vars].values
+                    X_test = test[pred_vars].values
+                    y_train = train['OUTCOME_VAR_1_INDICATOR'].values
+                    y_test = test['OUTCOME_VAR_1_INDICATOR'].values
 
-                # Create model attributes for X and y (for debugging)
-                self.X_train = X_train
-                self.X_test = X_test
-                self.y_train = y_train
-                self.y_test = y_test
+                    # Convert X_train, X_test, y_train, and y_test to numpy arrays
+                    if isinstance(rf, RandomForestClassifier):
+                        X_train = np.array(X_train, dtype=float)
+                        X_test = np.array(X_test, dtype=float)
+                        y_train = np.array(y_train, dtype=int)
+                        y_test = np.array(y_test, dtype=int)
 
-                # Create option to weight samples by recency
-                if recency_weighted:
-                    sw_train = np.linspace(1, 1.5, X_train.shape[0])
-                else:
-                    sw_train = np.repeat(1, X_train.shape[0])
+                    # Create model attributes for X and y (for debugging)
+                    self.X_train = X_train
+                    self.X_test = X_test
+                    self.y_train = y_train
+                    self.y_test = y_test
 
-                # Train the model
-                rf.fit(X_train, y_train, sample_weight=sw_train)
+                    # Create option to weight samples by recency
+                    if recency_weighted:
+                        sw_train = np.linspace(1, 1.5, X_train.shape[0])
+                    else:
+                        sw_train = np.repeat(1, X_train.shape[0])
 
-                # Predict on test data
-                y_pred = rf.predict(X_test)
-                y_pred_proba = rf.predict_proba(X_test)
+                    # Train the model
+                    rf.fit(X_train, y_train, sample_weight=sw_train)
 
-                # Add predictions to dataframe for each seed
-                try:
-                    self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                     pd.DateOffset(months=3)), f'REAL_PRED_CLS_{seed}'] = y_pred
+                    # Predict on test data
+                    y_pred = rf.predict(X_test)
+                    y_pred_proba = rf.predict_proba(X_test)
 
-                    self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
-                                                     pd.DateOffset(months=3)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
-                        y_pred_proba[:, 1]
-                except IndexError:
-                    print("\nY_PRED_PROBA\n:", y_pred_proba)
-                    print("\nY_PRED\n:", y_pred)
-                    continue
+                    # Add predictions to dataframe for each seed
+                    try:
+                        self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
+                                                         pd.DateOffset(months=3)), f'REAL_PRED_CLS_{seed}'] = y_pred
+
+                        self.data.loc[str(timesplit):str(pd.to_datetime(timesplit) +
+                                                         pd.DateOffset(months=3)), f'REAL_PRED_PROBA_CLS_{seed}'] = \
+                            y_pred_proba[:, 1]
+                    except IndexError:
+                        print("\nY_PRED_PROBA\n:", y_pred_proba)
+                        print("\nY_PRED\n:", y_pred)
+                        continue
+
+                    # Update the progress bar
+                    pbar.update(1)
 
                 # Calculate feature importance for last seed to evaluate
                 if perm_feat:
