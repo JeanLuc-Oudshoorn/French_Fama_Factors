@@ -560,6 +560,9 @@ class WeeklyFinancialForecastingModel:
             for i, timesplit in enumerate(date_list):
                 for seed in range(self.num_rounds):
 
+                    # For debugging
+                    self.timesplit = timesplit
+
                     # Initialize basic model
                     rf = RandomForestClassifier(random_state=seed,
                                                 n_jobs=-1,
@@ -571,13 +574,13 @@ class WeeklyFinancialForecastingModel:
                     test = self.data[(self.data.index >= timesplit) &
                                      (self.data.index <= pd.to_datetime(timesplit) + pd.DateOffset(months=3))]
 
-                    # Assert that train and test sets are filtered correclty
-                    assert isinstance(train.index, pd.DatetimeIndex), "Train index is not of type: pd.DatetimeIndex"
-                    assert train.index.max() <= test.index.min(), "Test start date should be later than train end date"
-
                     # Skip to next iteration if X_test is empty
                     if test.empty:
                         continue
+
+                    # Assert that train and test sets are filtered correclty
+                    assert isinstance(train.index, pd.DatetimeIndex), "Train index is not of type: pd.DatetimeIndex"
+                    assert train.index.max() <= test.index.min(), "Test start date should be later than train end date"
 
                     # Split into X and Y
                     X_train = train[pred_vars].values
