@@ -46,11 +46,17 @@ class TestWeeklyFinancialForecastingModel:
         outcome_var = model.daily_data['OUTCOME_VAR'].dropna()
         outcome_var_1 = model.daily_data['OUTCOME_VAR_1'].dropna()
 
+        # Drop consecutive rows with the same value in 'OUTCOME_VAR'
+        outcome_var = outcome_var.loc[outcome_var.shift() != outcome_var]
+
+        # Drop consecutive rows with the same value in 'OUTCOME_VAR_1'
+        outcome_var_1 = outcome_var_1.loc[outcome_var_1.shift() != outcome_var_1]
+
         # Get the last 50 rows of 'OUTCOME_VAR' and 'OUTCOME_VAR_1'
         last_50_outcome_var = outcome_var.tail(50).reset_index(drop=True)
         last_50_outcome_var_1 = outcome_var_1.tail(50).reset_index(drop=True)
 
-        # Check if the last 20 rows of 'OUTCOME_VAR' and 'OUTCOME_VAR_1' are the same
+        # Check if the last 50 rows of 'OUTCOME_VAR' and 'OUTCOME_VAR_1' are the same
         assert last_50_outcome_var.equals(last_50_outcome_var_1), "The last 50 rows of 'OUTCOME_VAR' and 'OUTCOME_VAR_1' are not the same"
 
     def test_drawdown_values_in_outcome_var(self, model):
@@ -105,7 +111,7 @@ class TestWeeklyFinancialForecastingModel:
                 # Check if the 'DRAWDOWN' value is the same in model.data and model.daily_data
                 assert drawdown_value == daily_data_drawdown_value, f"The value {drawdown_value} in 'DRAWDOWN' of model.data does not match the value {daily_data_drawdown_value} in 'DRAWDOWN' of model.daily_data on date {date}"
 
-    @pytest.mark.parametrize("timesplit,train_years", [('2014-01-01', 20), ('2022-01-01', 15), ('2024-03-01', 10)])
+    @pytest.mark.parametrize("timesplit,train_years", [('2014-01-01', 20), ('2016-06-01', 18), ('2022-01-01', 15), ('2024-03-01', 10)])
     def test_no_outcome_var_1_in_X_train_X_test(self, model, timesplit, train_years):
         # Timesplit train- and test data
         train = model.data[(model.data.index < timesplit) &
@@ -134,3 +140,33 @@ class TestWeeklyFinancialForecastingModel:
         for df in [X_train, X_test]:
             for var in df.columns:
                 assert 'OUTCOME_VAR_1' not in var, f"The variable {var} in 'X_train' or 'X_test' contains the substring 'OUTCOME_VAR_1' for timesplit {timesplit} and train_years {train_years}"
+
+    def test_no_three_repeats_in_outcome_var(self, model):
+        # Drop NA values from 'OUTCOME_VAR'
+        outcome_var = model.data['OUTCOME_VAR'].dropna()
+
+        # Initialize a counter and a variable to store the previous value
+        counter = 1
+        prev_value = outcome_var.iloc[0]
+
+        # Iterate over the 'OUTCOME_VAR' values
+        for value in outcome_var.iloc[1:]:
+            if value == prev_value:
+                # If the value is the same as the previous one, increment the counter
+                counter += 1
+            else:
+                # If the value is different, reset the counter and update the previous value
+                counter = 1
+                prev_value = value
+
+            # Check if the counter is greater than 2
+            assert counter <= 2, f"The value {prev_value} repeats more than two times in a row in 'OUTCOME_VAR'"
+
+    def test_all_dates_are_fridays(self, model):
+        # Get the dates from the index of model.data
+        dates = model.data.index
+
+        # Iterate over the dates
+        for date in dates:
+            # Check if the date is a Friday
+            assert date.weekday() == 4, f"The date {date} is not a Friday"

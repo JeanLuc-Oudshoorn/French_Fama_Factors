@@ -123,6 +123,7 @@ def build_nasdaq_random_config():
     fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
     continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 5), replace=False))
     sent_cols_to_drop = ['NEUTRAL'] + list(np.random.choice(sentiment_options, np.random.randint(1, 3), replace=False))
+    geo = np.random.choice([True, False], p=[0.3, 0.7])
     cape = np.random.choice([True, False], p=[0.5, 0.5])
     max_features = np.round(np.random.uniform(0.2, 0.4), 2)
     n_estimators = np.random.randint(70, 140)
@@ -143,6 +144,7 @@ def build_nasdaq_random_config():
         'fred_series': fred_series,
         'continuous_series': continuous_series,
         'sent_cols_to_drop': sent_cols_to_drop,
+        'geo': geo,
         'cape': cape,
         'max_features': max_features,
         'n_estimators': n_estimators,

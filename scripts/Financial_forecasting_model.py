@@ -23,7 +23,7 @@ class WeeklyFinancialForecastingModel:
     def __init__(self, log_path: str, stocks_list: list, returns_data_date_column: str, resampling_day: str,
                  date_name: str, col_names: list, columns_to_drop: list, outcome_vars: list, series_diff: int,
                  fred_series: list, continuous_series: list, num_rounds: int, test_start_date: str, output_path: str,
-                 start_date: str = '2000-01-01', drawdown_mult: float = 0.96, drawdown_days: int = 60):
+                 start_date: str = '2000-01-01', drawdown_mult: float = 0.96, drawdown_days: int = 7*9):
 
         self.log_path = log_path
         self.stocks_list = stocks_list
@@ -186,7 +186,7 @@ class WeeklyFinancialForecastingModel:
         inv_sentiment['DATE'] = pd.to_datetime(inv_sentiment['DATE'])
 
         # Drop the neutral reading
-        inv_sentiment.drop(columns=sent_cols_to_drop, inplace=True)
+        inv_sentiment = inv_sentiment.drop(columns=sent_cols_to_drop).dropna()
 
         # Define a dictionary to map resampling days to the number of days to shift
         resampling_days_shift = {'W-Mon': 4, 'W-Tue': 5, 'W-Wed': 6, 'W-Thu': 0, 'W-Fri': 1, 'W-Sat': 2}
@@ -206,6 +206,24 @@ class WeeklyFinancialForecastingModel:
             self.data.drop_duplicates(inplace=True, subset=subset)
 
         return self.data
+
+    def add_geopolitical_risk_data(self, apply: bool = True):
+
+        if apply:
+            # Read in geopolitical risk data
+            geo_risk = pd.read_excel('data_gpr_daily_recent.xls')
+
+            # Keep relevant columns
+            geo_risk = geo_risk[['date', 'GPRD_MA7']]
+
+            # Set index
+            geo_risk[self.date_name] = pd.to_datetime(geo_risk['date']) + pd.Timedelta(days=4)
+
+            # Assert that the maximum date in 'geo_risk' is a Friday
+            assert geo_risk[self.date_name].max().weekday() == 4, "The maximum date in 'geo_risk' is not a Friday"
+
+            # Merge geopolitical risk to indices
+            self.data = pd.merge(self.data, geo_risk[[self.date_name, 'GPRD_MA7']], on=self.date_name, how='left')
 
     def add_shiller_cape(self, apply: bool = True):
 
@@ -262,6 +280,15 @@ class WeeklyFinancialForecastingModel:
         self.data = self.data[(self.data.index >= self.start_date) &
                               (self.data.index <= self.current_date)]
 
+        # Define weekday dict
+        resampling_days_shift = {'W-Mon': 0, 'W-Tue': 1, 'W-Wed': 2, 'W-Thu': 3, 'W-Fri': 4, 'W-Sat': 5}
+
+        # Get check_day with default Friday
+        check_day = resampling_days_shift.get(self.resampling_day, 4)
+
+        # Drop all rows that are not on a Friday
+        self.data = self.data[self.data.index.weekday == check_day]
+
         # Forward fill missing values
         self.data.ffill(inplace=True)
 
@@ -303,6 +330,13 @@ class WeeklyFinancialForecastingModel:
                                                               self.drawdown_mult * self.daily_data['OUTCOME_VAR'],
                                                               1, 0)
 
+        # Ensure the index is a DateTimeIndex
+        if not isinstance(self.daily_data.index, pd.DatetimeIndex):
+            self.daily_data.index = pd.to_datetime(self.daily_data.index)
+
+        # Resample the data to daily frequency, forward filling any missing values
+        self.daily_data = self.daily_data.resample('D').ffill()
+
         # Join data together
         self.data = pd.merge(self.data,
                              self.daily_data[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']],
@@ -330,7 +364,6 @@ class WeeklyFinancialForecastingModel:
                         momentum_diff_list: list, rsi_window=14, apo_fast=12, apo_slow=26, stats_length=30,
                         mom_length=10):
 
-        # Add combinations of other features in the dataset
         if 'SMB' in extra_features_list and all(item in self.data.columns for item in
                                                 ['Small Cap Value', 'Small Cap Growth',
                                                  'Large Cap Value', 'Large Cap Growth']):
@@ -544,6 +577,7 @@ class WeeklyFinancialForecastingModel:
         # Remove all future entries from date list
         date_list = [date for date in date_list if date <= str(self.current_date)]
 
+        # TODO: Discard any variation of outcome var - check if logic makes sense
         # Define dummy variables
         pred_vars = [var for var in self.data.columns if var not in
                      (['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR', 'DRAWDOWN'] +
@@ -587,6 +621,10 @@ class WeeklyFinancialForecastingModel:
                     X_test = test[pred_vars].values
                     y_train = train['OUTCOME_VAR_1_INDICATOR'].values
                     y_test = test['OUTCOME_VAR_1_INDICATOR'].values
+
+                    # Extra check to prevent data leakage
+                    for var in ['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'DRAWDOWN']:
+                        assert var not in train[pred_vars].columns
 
                     # Convert X_train, X_test, y_train, and y_test to numpy arrays
                     if isinstance(rf, RandomForestClassifier):
@@ -883,6 +921,8 @@ class WeeklyFinancialForecastingModel:
             self.add_continuous_data()
             self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
                                              sent_cols_to_drop=config['sent_cols_to_drop'])
+
+            self.add_geopolitical_risk_data(config['geo'])
             self.add_shiller_cape(config['cape'])
             self.fill_missing_values()
             self.define_outcome_var()
@@ -1037,6 +1077,7 @@ class WeeklyFinancialForecastingModel:
             self.add_continuous_data()
             self.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
                                              sent_cols_to_drop=config['sent_cols_to_drop'])
+            self.add_geopolitical_risk_data(config['geo'])
             self.add_shiller_cape(config['cape'])
             self.fill_missing_values()
             self.define_outcome_var()
