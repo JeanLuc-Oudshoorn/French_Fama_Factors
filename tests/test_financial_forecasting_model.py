@@ -28,6 +28,7 @@ def model():
     model.add_monthly_fred_data()
     model.add_continuous_data()
     _ = model.add_shiller_cape()
+    model.add_geopolitical_risk_data()
     model.add_investor_sentiment_data(aaii_sentiment='retail_investor_sentiment.xls',
                                       sent_cols_to_drop=['BEARISH', 'NEUTRAL'])
     model.fill_missing_values()
@@ -43,8 +44,8 @@ def model():
 class TestWeeklyFinancialForecastingModel:
     def test_last_rows_of_outcome_var_and_outcome_var_1(self, model):
         # Remove missing values from 'OUTCOME_VAR' and 'OUTCOME_VAR_1' columns
-        outcome_var = model.daily_data['OUTCOME_VAR'].dropna()
-        outcome_var_1 = model.daily_data['OUTCOME_VAR_1'].dropna()
+        outcome_var = model.daily_copy['OUTCOME_VAR'].dropna()
+        outcome_var_1 = model.daily_copy['OUTCOME_VAR_1'].dropna()
 
         # Drop consecutive rows with the same value in 'OUTCOME_VAR'
         outcome_var = outcome_var.loc[outcome_var.shift() != outcome_var]
@@ -61,8 +62,8 @@ class TestWeeklyFinancialForecastingModel:
 
     def test_drawdown_values_in_outcome_var(self, model):
         # Get 'DRAWDOWN' and 'OUTCOME_VAR' columns
-        drawdown = model.daily_data['DRAWDOWN']
-        outcome_var = model.daily_data['OUTCOME_VAR']
+        drawdown = model.daily_copy['DRAWDOWN']
+        outcome_var = model.daily_copy['OUTCOME_VAR']
 
         for i in range(len(drawdown)):
             # Check if the drawdown value appears in a lower row of the 'OUTCOME_VAR' column
@@ -76,9 +77,9 @@ class TestWeeklyFinancialForecastingModel:
         # Get the last 50 values of 'OUTCOME_VAR_1' in model.data
         last_50_data = model.data['OUTCOME_VAR_1'].dropna().tail(50)
 
-        # Check if each of these values also appears in 'OUTCOME_VAR_1' of model.daily_data
+        # Check if each of these values also appears in 'OUTCOME_VAR_1' of model.daily_copy
         for value in last_50_data:
-            assert value in model.daily_data['OUTCOME_VAR_1'].values, f"The value {value} does not appear in 'OUTCOME_VAR_1' of model.daily_data"
+            assert value in model.daily_copy['OUTCOME_VAR_1'].values, f"The value {value} does not appear in 'OUTCOME_VAR_1' of model.daily_copy"
 
     def test_drawdown_lower_than_outcome_var(self, model):
         # Get rows where 'OUTCOME_VAR_1_INDICATOR' is 1
@@ -103,13 +104,13 @@ class TestWeeklyFinancialForecastingModel:
         for date, row in model.data.iterrows():
             drawdown_value = row['DRAWDOWN']
 
-            # Check if 'DRAWDOWN' is not NaN and the date exists in model.daily_data
-            if pd.notna(drawdown_value) and date in model.daily_data.index:
-                # Get the value of 'DRAWDOWN' in model.daily_data on the same date
-                daily_data_drawdown_value = model.daily_data.loc[date, 'DRAWDOWN']
+            # Check if 'DRAWDOWN' is not NaN and the date exists in model.daily_copy
+            if pd.notna(drawdown_value) and date in model.daily_copy.index:
+                # Get the value of 'DRAWDOWN' in model.daily_copy on the same date
+                daily_copy_drawdown_value = model.daily_copy.loc[date, 'DRAWDOWN']
 
-                # Check if the 'DRAWDOWN' value is the same in model.data and model.daily_data
-                assert drawdown_value == daily_data_drawdown_value, f"The value {drawdown_value} in 'DRAWDOWN' of model.data does not match the value {daily_data_drawdown_value} in 'DRAWDOWN' of model.daily_data on date {date}"
+                # Check if the 'DRAWDOWN' value is the same in model.data and model.daily_copy
+                assert drawdown_value == daily_copy_drawdown_value, f"The value {drawdown_value} in 'DRAWDOWN' of model.data does not match the value {daily_copy_drawdown_value} in 'DRAWDOWN' of model.daily_copy on date {date}"
 
     @pytest.mark.parametrize("timesplit,train_years", [('2014-01-01', 20), ('2016-06-01', 18), ('2022-01-01', 15), ('2024-03-01', 10)])
     def test_no_outcome_var_1_in_X_train_X_test(self, model, timesplit, train_years):

@@ -325,27 +325,27 @@ class WeeklyFinancialForecastingModel:
         self.data.drop(columns=volume_columns, inplace=True)
 
         # Create a copy of daily data to leave the original data intact for next round
-        daily_outcome_data = self.daily_data.copy()
+        self.daily_copy = self.daily_data.copy()
 
         # Shift future observations forward to create outcome
-        daily_outcome_data['OUTCOME_VAR_1'] = daily_outcome_data['OUTCOME_VAR'].shift(-self.drawdown_days)
+        self.daily_copy['OUTCOME_VAR_1'] = self.daily_copy['OUTCOME_VAR'].shift(-self.drawdown_days)
 
         # Check if drawdown is more than drawdown_tol (default 4%)
-        daily_outcome_data['DRAWDOWN'] = daily_outcome_data['OUTCOME_VAR_1'].rolling(self.drawdown_days).min()
-        daily_outcome_data['OUTCOME_VAR_1_INDICATOR'] = np.where(daily_outcome_data['DRAWDOWN'] <
-                                                                 self.drawdown_mult * daily_outcome_data['OUTCOME_VAR'],
-                                                                 1, 0)
+        self.daily_copy['DRAWDOWN'] = self.daily_copy['OUTCOME_VAR_1'].rolling(self.drawdown_days).min()
+        self.daily_copy['OUTCOME_VAR_1_INDICATOR'] = np.where(self.daily_copy['DRAWDOWN'] <
+                                                              self.drawdown_mult * self.daily_copy['OUTCOME_VAR'],
+                                                              1, 0)
 
         # Ensure the index is a DateTimeIndex
-        if not isinstance(daily_outcome_data.index, pd.DatetimeIndex):
-            daily_outcome_data.index = pd.to_datetime(daily_outcome_data.index)
+        if not isinstance(self.daily_copy.index, pd.DatetimeIndex):
+            self.daily_copy.index = pd.to_datetime(self.daily_copy.index)
 
         # Resample the data to daily frequency, forward filling any missing values
-        daily_outcome_data = daily_outcome_data.resample('D').ffill()
+        self.daily_copy = self.daily_copy.resample('D').ffill()
 
         # Join data together
         self.data = pd.merge(self.data,
-                             daily_outcome_data[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']],
+                             self.daily_copy[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']],
                              left_index=True,
                              right_index=True,
                              how='left')
