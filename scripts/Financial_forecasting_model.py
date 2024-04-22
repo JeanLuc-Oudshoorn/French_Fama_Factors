@@ -219,8 +219,11 @@ class WeeklyFinancialForecastingModel:
             # Set index
             geo_risk[self.date_name] = pd.to_datetime(geo_risk['date']) + pd.Timedelta(days=4)
 
+            resampling_days_shift = {'W-Mon': 0, 'W-Tue': 1, 'W-Wed': 2, 'W-Thu': 3, 'W-Fri': 4, 'W-Sat': 5}
+
             # Assert that the maximum date in 'geo_risk' is a Friday
-            assert geo_risk[self.date_name].max().weekday() == 4, "The maximum date in 'geo_risk' is not a Friday"
+            assert geo_risk[self.date_name].max().weekday() == resampling_days_shift.get(self.resampling_day, 4), \
+                "The latest date in 'geo_risk' is not a Friday"
 
             # Merge geopolitical risk to indices
             self.data = pd.merge(self.data, geo_risk[[self.date_name, 'GPRD_MA7']], on=self.date_name, how='left')
@@ -321,25 +324,28 @@ class WeeklyFinancialForecastingModel:
         volume_columns = volume_columns.drop('OUTCOME_VOLUME')
         self.data.drop(columns=volume_columns, inplace=True)
 
+        # Create a copy of daily data to leave the original data intact for next round
+        daily_outcome_data = self.daily_data.copy()
+
         # Shift future observations forward to create outcome
-        self.daily_data['OUTCOME_VAR_1'] = self.daily_data['OUTCOME_VAR'].shift(-self.drawdown_days)
+        daily_outcome_data['OUTCOME_VAR_1'] = daily_outcome_data['OUTCOME_VAR'].shift(-self.drawdown_days)
 
         # Check if drawdown is more than drawdown_tol (default 4%)
-        self.daily_data['DRAWDOWN'] = self.daily_data['OUTCOME_VAR_1'].rolling(self.drawdown_days).min()
-        self.daily_data['OUTCOME_VAR_1_INDICATOR'] = np.where(self.daily_data['DRAWDOWN'] <
-                                                              self.drawdown_mult * self.daily_data['OUTCOME_VAR'],
-                                                              1, 0)
+        daily_outcome_data['DRAWDOWN'] = daily_outcome_data['OUTCOME_VAR_1'].rolling(self.drawdown_days).min()
+        daily_outcome_data['OUTCOME_VAR_1_INDICATOR'] = np.where(daily_outcome_data['DRAWDOWN'] <
+                                                                 self.drawdown_mult * daily_outcome_data['OUTCOME_VAR'],
+                                                                 1, 0)
 
         # Ensure the index is a DateTimeIndex
-        if not isinstance(self.daily_data.index, pd.DatetimeIndex):
-            self.daily_data.index = pd.to_datetime(self.daily_data.index)
+        if not isinstance(daily_outcome_data.index, pd.DatetimeIndex):
+            daily_outcome_data.index = pd.to_datetime(daily_outcome_data.index)
 
         # Resample the data to daily frequency, forward filling any missing values
-        self.daily_data = self.daily_data.resample('D').ffill()
+        daily_outcome_data = daily_outcome_data.resample('D').ffill()
 
         # Join data together
         self.data = pd.merge(self.data,
-                             self.daily_data[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']],
+                             daily_outcome_data[['OUTCOME_VAR', 'OUTCOME_VAR_1', 'DRAWDOWN', 'OUTCOME_VAR_1_INDICATOR']],
                              left_index=True,
                              right_index=True,
                              how='left')
