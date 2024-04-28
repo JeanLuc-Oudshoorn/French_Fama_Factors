@@ -583,7 +583,6 @@ class WeeklyFinancialForecastingModel:
         # Remove all future entries from date list
         date_list = [date for date in date_list if date <= str(self.current_date)]
 
-        # TODO: Discard any variation of outcome var - check if logic makes sense
         # Define dummy variables
         pred_vars = [var for var in self.data.columns if var not in
                      (['OUTCOME_VAR_1', 'OUTCOME_VAR_1_INDICATOR', 'OUTCOME_VAR', 'DRAWDOWN'] +
