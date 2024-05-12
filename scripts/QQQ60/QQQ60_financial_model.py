@@ -19,8 +19,8 @@ for configuration in feature_configs:
 # Initialize the class with required arguments
 model = WeeklyFinancialForecastingModel(log_path='logs/QQQ60/QQQ60_output_log_search.txt',
                                         stocks_list=['QQQ', '^NDX', '^GSPC', '^VXN', 'NQ=F', 'DX=F', 'GC=F'],
-                                        returns_data_date_column='Date',
                                         resampling_day='W-Fri',
+                                        returns_data_date_column='Date',
                                         date_name='DATE',
                                         col_names=['DATE', 'QQQ', 'NDQ', 'SP500', 'VIX', 'NDQF', 'DXF', 'GF'],
                                         columns_to_drop=[],
