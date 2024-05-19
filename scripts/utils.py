@@ -122,14 +122,14 @@ def build_nasdaq_random_config():
     ma_timespans = [np.random.randint(3, 7), np.random.randint(8, 17)]
     fred_series = list(np.random.choice(fred_series_options, np.random.randint(0, 2), replace=False))
     continuous_series = list(np.random.choice(continuous_series_options, np.random.randint(0, 5), replace=False))
-    sent_cols_to_drop = ['NEUTRAL'] + list(np.random.choice(sentiment_options, np.random.randint(1, 3), replace=False))
+    sent_cols_to_drop = ['NEUTRAL'] + list(np.random.choice(sentiment_options, np.random.randint(0, 3), replace=False))
     geo = np.random.choice([True, False], p=[0.3, 0.7])
     cape = np.random.choice([True, False], p=[0.5, 0.5])
     max_features = np.round(np.random.uniform(0.2, 0.4), 2)
     n_estimators = np.random.randint(70, 140)
     stats_length = np.random.randint(20, 52)
     mom_length = np.random.randint(7, 14)
-    train_years = np.random.randint(10, 25)
+    train_years = np.random.randint(14, 27)
     recency_weighted = np.random.choice([True, False], p=[0.1, 0.9])
     exclude_base_outcome = np.random.choice([True, False])
     momentum_diff_list = []
