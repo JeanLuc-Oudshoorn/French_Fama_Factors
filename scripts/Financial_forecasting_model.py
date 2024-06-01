@@ -476,7 +476,7 @@ class WeeklyFinancialForecastingModel:
             self.data[var].fillna(method='ffill', inplace=True)
 
         # Create rolling averages and as extra features
-        for var in all_predictors + [var + '_DIFF_1' for var in features_no_ma] + ['OUTCOME_VAR_DIFF_1']:
+        for var in all_predictors:
             for timespan in ma_timespans:
                 self.data[f'{var}_ROLLING_{timespan}'] = self.data[var].rolling(timespan).mean()
 

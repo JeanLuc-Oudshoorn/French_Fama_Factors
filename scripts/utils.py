@@ -129,7 +129,7 @@ def build_nasdaq_random_config():
     n_estimators = np.random.randint(70, 140)
     stats_length = np.random.randint(20, 52)
     mom_length = np.random.randint(7, 14)
-    train_years = np.random.randint(14, 27)
+    train_years = np.random.randint(13, 27)
     recency_weighted = np.random.choice([True, False], p=[0.1, 0.9])
     exclude_base_outcome = np.random.choice([True, False])
     momentum_diff_list = []
