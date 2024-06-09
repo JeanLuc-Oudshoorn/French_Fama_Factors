@@ -1,0 +1,11 @@
+matplotlib
+seaborn
+scipy
+numpy
+pandas
+pandas_ta
+pandas_datareader
+pytest
+yfinance
+tqdm
+scikit-learn
