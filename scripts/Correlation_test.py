@@ -6,8 +6,8 @@ from scipy.stats import spearmanr
 base_dir = os.path.abspath('C:/Users/JeanLucOudshoorn/PycharmProjects/French_Fama_Factors')
 
 # Construct the full paths to the CSV files
-early_path = os.path.join(base_dir, 'logs/QQQ60/QQQ60_19_May_2024.csv')
-late_path = os.path.join(base_dir, 'logs/QQQ60/QQQ60_07_Jul_2024.csv')
+early_path = os.path.join(base_dir, 'logs/QQQ60/QQQ60_26_May_2024.csv')
+late_path = os.path.join(base_dir, 'logs/QQQ60/QQQ60_21_Jul_2024.csv')
 
 # Loading early and late predictions
 early = pd.read_csv(early_path)
