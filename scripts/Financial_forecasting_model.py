@@ -834,10 +834,10 @@ class WeeklyFinancialForecastingModel:
             print(matrix_str, '\n')
 
         if perform_sensitivity_test:
-            sensitivity_test([0.55, 0.6, 0.65, 0.7, 0.75, 0.80, 0.85],
-                             ['55', '60', '65', '70', '75', '80', '85'], True)
-            sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25, 0.20, 0.15],
-                             ['45', '40', '35', '30', '25', '20', '15'], False)
+            sensitivity_test([0.55, 0.6, 0.65, 0.7, 0.75, 0.80, 0.85, 0.90],
+                             ['55', '60', '65', '70', '75', '80', '85', '90'], True)
+            sensitivity_test([0.45, 0.4, 0.35, 0.3, 0.25, 0.20, 0.15, 0.10],
+                             ['45', '40', '35', '30', '25', '20', '15', '10'], False)
             print_confusion_matrix(cm)
 
         if save_future_preds:

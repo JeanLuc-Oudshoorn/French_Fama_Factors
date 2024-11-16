@@ -1,5 +1,6 @@
 from scripts.Financial_forecasting_model import WeeklyFinancialForecastingModel
 from scripts.utils import *
+import datetime
 import pprint
 import os
 
@@ -45,3 +46,12 @@ with open('logs/QQQ60_10/QQQ60_10_best_configs_auto.py', 'w') as f:
 # Save the results dictionary as a pickle file
 with open('results/QQQ60_10/QQQ60_10_results.pkl', 'wb') as f:
     pickle.dump(results, f)
+
+# Get the current date
+current_date = datetime.datetime.now()
+
+# Format the date as a string in the format 'day_Month_year'
+date_str = current_date.strftime('%d_%b_%Y')
+
+# Use the date string in the file path
+model.future_preds['MEAN_PRED_PROBA'].to_csv(f'logs/QQQ60_10/QQQ60_{date_str}.csv')
