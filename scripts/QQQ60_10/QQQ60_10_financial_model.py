@@ -1,5 +1,6 @@
 from scripts.Financial_forecasting_model import WeeklyFinancialForecastingModel
 from scripts.utils import *
+from logs.QQQ60_10.QQQ60_10_best_configs_auto import best_configs
 import datetime
 import pprint
 import os
@@ -8,7 +9,8 @@ import os
 os.chdir(os.path.dirname(os.path.dirname(os.getcwd())))
 
 # Build random configurations
-random_configs = [build_nasdaq_random_config() for _ in range(40)]
+random_configs = [build_nasdaq_random_config() for _ in range(40)] + best_configs
+# random_configs = [build_fixed_config()]
 
 # Add the best configurations from the QQQ model
 feature_configs = random_configs
